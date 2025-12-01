@@ -9,7 +9,7 @@ import (
 )
 
 type Instruction struct {
-	Direction string
+	Direction byte
 	Distance  int
 }
 
@@ -17,17 +17,22 @@ var (
 	instructionPattern = regexp.MustCompile(`(L|R)(\d+)`)
 )
 
+func mod(a, m int) int {
+	return ((a % m) + m) % m
+}
+
 func parseInput(input string) ([]Instruction, error) {
 	matches := instructionPattern.FindAllStringSubmatch(input, -1)
-	fmt.Printf("Found %d instructions\n", len(matches))
 	instructions := make([]Instruction, len(matches))
 	for i, m := range matches {
-		instructions[i].Direction = m[1]
 		d, err := strconv.Atoi(m[2])
 		if err != nil {
 			return nil, err
 		}
-		instructions[i].Distance = d
+		instructions[i] = Instruction{
+			Direction: m[1][0],
+			Distance:  d,
+		}
 	}
 	return instructions, nil
 }
@@ -37,19 +42,11 @@ func part1(instructions []Instruction) int {
 	notchZeroCount := 0
 
 	for _, instr := range instructions {
-		fmt.Printf("At notch %d, instruction: %s%d\n", currentNotch, instr.Direction, instr.Distance)
-		switch instr.Direction {
-		case "L":
-			nextNotch := currentNotch - instr.Distance
-			nextNotch %= 100
-			if nextNotch < 0 {
-				nextNotch += 100
-			}
-			currentNotch = nextNotch
-		case "R":
-			nextNotch := (currentNotch + instr.Distance) % 100
-			currentNotch = nextNotch
+		delta := instr.Distance
+		if instr.Direction == 'L' {
+			delta = -delta
 		}
+		currentNotch = mod(currentNotch+delta, 100)
 		if currentNotch == 0 {
 			notchZeroCount++
 		}
