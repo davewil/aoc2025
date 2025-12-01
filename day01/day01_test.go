@@ -37,7 +37,7 @@ func TestPart2(t *testing.T) {
 	}
 
 	result := part2(input)
-	expected := 0
+	expected := 6
 
 	if result != expected {
 		t.Errorf("part2() = %d; want %d", result, expected)

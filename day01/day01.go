@@ -21,6 +21,23 @@ func mod(a, m int) int {
 	return ((a % m) + m) % m
 }
 
+func absInt(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func crossesZero(oldMod, newMod, delta int) bool {
+	if oldMod == 0 || delta == 0 || delta%100 == 0 {
+		return false
+	}
+	if delta > 0 {
+		return newMod <= oldMod
+	}
+	return newMod > oldMod || newMod == 0
+}
+
 func parseInput(input string) ([]Instruction, error) {
 	matches := instructionPattern.FindAllStringSubmatch(input, -1)
 	instructions := make([]Instruction, len(matches))
@@ -39,24 +56,39 @@ func parseInput(input string) ([]Instruction, error) {
 
 func part1(instructions []Instruction) int {
 	currentNotch := 50
-	notchZeroCount := 0
-
+	notchZeroSeenCount := 0
 	for _, instr := range instructions {
 		delta := instr.Distance
 		if instr.Direction == 'L' {
 			delta = -delta
 		}
-		currentNotch = mod(currentNotch+delta, 100)
-		if currentNotch == 0 {
-			notchZeroCount++
+		currentNotch += delta
+		if mod(currentNotch, 100) == 0 {
+			notchZeroSeenCount++
 		}
 	}
-	return notchZeroCount
+	return notchZeroSeenCount
 }
 
 func part2(instructions []Instruction) int {
-	// Solve part 2 here
-	return 0
+	currentNotch := 50
+	notchZeroSeenCount := 0
+	for _, instr := range instructions {
+		delta := instr.Distance
+		if instr.Direction == 'L' {
+			delta = -delta
+		}
+
+		notchZeroSeenCount += absInt(delta) / 100
+
+		oldMod := mod(currentNotch, 100)
+		currentNotch += delta
+		newMod := mod(currentNotch, 100)
+		if crossesZero(oldMod, newMod, delta) {
+			notchZeroSeenCount++
+		}
+	}
+	return notchZeroSeenCount
 }
 
 func main() {
