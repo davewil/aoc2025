@@ -21,13 +21,6 @@ func mod(a, m int) int {
 	return ((a % m) + m) % m
 }
 
-func absInt(x int) int {
-	if x < 0 {
-		return -x
-	}
-	return x
-}
-
 func crossesZero(oldMod, newMod, delta int) bool {
 	if oldMod == 0 || delta == 0 || delta%100 == 0 {
 		return false
@@ -79,7 +72,7 @@ func part2(instructions []Instruction) int {
 			delta = -delta
 		}
 
-		notchZeroSeenCount += absInt(delta) / 100
+		notchZeroSeenCount += utils.Abs(delta) / 100
 
 		oldMod := mod(currentNotch, 100)
 		currentNotch += delta
