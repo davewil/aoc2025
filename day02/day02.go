@@ -121,13 +121,21 @@ func main() {
 		return
 	}
 
+	fmt.Println("--- Sequential ---")
 	start := time.Now()
 	result1 := part1(data)
-	duration1 := time.Since(start)
-	fmt.Printf("Part 1: %d (took %v)\n", result1, duration1)
+	fmt.Printf("Part 1: %d (took %v)\n", result1, time.Since(start))
 
 	start = time.Now()
 	result2 := part2(data)
-	duration2 := time.Since(start)
-	fmt.Printf("Part 2: %d (took %v)\n", result2, duration2)
+	fmt.Printf("Part 2: %d (took %v)\n", result2, time.Since(start))
+
+	fmt.Println("\n--- Concurrent ---")
+	start = time.Now()
+	result1Conc := part1Concurrent(data)
+	fmt.Printf("Part 1: %d (took %v)\n", result1Conc, time.Since(start))
+
+	start = time.Now()
+	result2Conc := part2Concurrent(data)
+	fmt.Printf("Part 2: %d (took %v)\n", result2Conc, time.Since(start))
 }
