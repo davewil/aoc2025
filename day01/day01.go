@@ -17,10 +17,6 @@ var (
 	instructionPattern = regexp.MustCompile(`(L|R)(\d+)`)
 )
 
-func mod(a, m int) int {
-	return ((a % m) + m) % m
-}
-
 func crossesZero(oldMod, newMod, delta int) bool {
 	if oldMod == 0 || delta == 0 || delta%100 == 0 {
 		return false
@@ -56,7 +52,7 @@ func part1(instructions []Instruction) int {
 			delta = -delta
 		}
 		currentNotch += delta
-		if mod(currentNotch, 100) == 0 {
+		if utils.Mod(currentNotch, 100) == 0 {
 			notchZeroSeenCount++
 		}
 	}
@@ -74,9 +70,9 @@ func part2(instructions []Instruction) int {
 
 		notchZeroSeenCount += utils.Abs(delta) / 100
 
-		oldMod := mod(currentNotch, 100)
+		oldMod := utils.Mod(currentNotch, 100)
 		currentNotch += delta
-		newMod := mod(currentNotch, 100)
+		newMod := utils.Mod(currentNotch, 100)
 		if crossesZero(oldMod, newMod, delta) {
 			notchZeroSeenCount++
 		}
