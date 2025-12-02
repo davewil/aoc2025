@@ -20,15 +20,15 @@ func parseInput(input string) ([]Range, error) {
 	ranges := make([]Range, 0, len(data))
 
 	for _, r := range data {
-		parts := strings.Split(r, "-")
-		if len(parts) != 2 {
+		bounds := strings.Split(r, "-")
+		if len(bounds) != 2 {
 			return nil, fmt.Errorf("invalid range: %s", r)
 		}
-		start, err := strconv.Atoi(parts[0])
+		start, err := strconv.Atoi(bounds[0])
 		if err != nil {
 			return nil, err
 		}
-		end, err := strconv.Atoi(parts[1])
+		end, err := strconv.Atoi(bounds[1])
 		if err != nil {
 			return nil, err
 		}
@@ -43,10 +43,11 @@ func part1(ranges []Range) int {
 	for _, r := range ranges {
 		for i := r.Start; i <= r.End; i++ {
 			s := strconv.Itoa(i)
+			if len(s)%2 != 0 {
+				continue
+			}
 			mid := len(s) / 2
-			left := s[:mid]
-			right := s[mid:]
-			if left == right {
+			if s[:mid] == s[mid:] {
 				total += i
 			}
 		}
@@ -55,50 +56,24 @@ func part1(ranges []Range) int {
 	return total
 }
 
-var factorsCache = make(map[int][]int)
-
-func factors(n int) []int {
-	if facs, ok := factorsCache[n]; ok {
-		return facs
-	}
-
+func getDivisors(n int) []int {
 	var result []int
-	for i := 1; i*i <= n; i++ {
+	// We only go up to n/2 because a repeating chunk must be at most half the string
+	for i := 1; i <= n/2; i++ {
 		if n%i == 0 {
 			result = append(result, i)
-			if i != n/i && n/i != n {
-				result = append(result, n/i)
-			}
 		}
-
 	}
-	factorsCache[n] = result
 	return result
 }
 
-func chunkString(s string, size int) []string {
-	if size <= 0 {
-		return nil
+func hasRepeatingPattern(s string, chunkLen int) bool {
+	if chunkLen <= 0 || len(s)%chunkLen != 0 {
+		return false
 	}
-
-	var chunks []string
-	for i := 0; i < len(s); i += size {
-		end := i + size
-		if end > len(s) {
-			end = len(s)
-		}
-		chunks = append(chunks, s[i:end])
-	}
-	return chunks
-}
-
-func allSame(slice []string) bool {
-	if len(slice) == 0 {
-		return true
-	}
-	first := slice[0]
-	for _, s := range slice[1:] {
-		if s != first {
+	pattern := s[:chunkLen]
+	for i := chunkLen; i < len(s); i += chunkLen {
+		if s[i:i+chunkLen] != pattern {
 			return false
 		}
 	}
@@ -110,17 +85,22 @@ func part2(ranges []Range) int {
 	total := 0
 	for _, r := range ranges {
 		for i := r.Start; i <= r.End; i++ {
-			s := strconv.Itoa(i)
-			if len(s) == 1 {
+			if seen[i] {
 				continue
 			}
-			facs := factors(len(s))
 
-			for _, f := range facs {
-				chunks := chunkString(s, f)
-				if allSame(chunks) && !seen[i] {
+			s := strconv.Itoa(i)
+			if len(s) < 2 {
+				continue
+			}
+
+			divs := getDivisors(len(s))
+
+			for _, d := range divs {
+				if hasRepeatingPattern(s, d) {
 					seen[i] = true
 					total += i
+					break
 				}
 			}
 		}
