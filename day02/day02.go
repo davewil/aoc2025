@@ -2,12 +2,11 @@ package main
 
 import (
 	"fmt"
+
 	utils "github.com/davewil/aoc-utils"
 )
 
-// parseInput is a placeholder; real parsing will be added once
-// the Day 2 puzzle format is known.
-func parseInput(raw string) ([]string, error) {
+func parseInput(input string) ([]string, error) {
 	return []string{}, nil
 }
 
