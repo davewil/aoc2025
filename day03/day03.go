@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"math"
+	"slices"
 
 	utils "github.com/davewil/aoc-utils"
 )
@@ -106,6 +108,49 @@ func getHighestJoltage(bank []int) int64 {
 	return result
 }
 
+func part3(banks [][]int) int64 {
+	var total int64
+	for _, bank := range banks {
+		total += getHighestJoltageRecursive(bank)
+	}
+	return total
+}
+
+func getHighestJoltageRecursive(bank []int) int64 {
+	return maxJoltage(bank, 12)
+}
+
+func maxJoltage(bank []int, digits int) int64 {
+	if digits == 1 {
+		return int64(slices.Max(bank))
+	}
+
+	// Find max digit in the range where we can still get enough remaining digits
+	// We need (digits-1) items after the current one.
+	// So the last possible index for current digit is len(bank) - (digits-1) - 1?
+	// No, len(bank) - (digits-1) is the length of the prefix we can search.
+	// Example: len 5, need 3 digits.
+	// digits=3. Need 2 after.
+	// Indices: 0, 1, 2, 3, 4.
+	// Can pick index 0 (remains 4 >= 2).
+	// Can pick index 1 (remains 3 >= 2).
+	// Can pick index 2 (remains 2 >= 2).
+	// Cannot pick index 3 (remains 1 < 2).
+	// So search range is bank[:3]. 3 = 5 - (3-1). Correct.
+
+	searchRange := bank[:len(bank)-(digits-1)]
+	maxDigit := slices.Max(searchRange)
+
+	// Find the *first* occurrence of maxDigit in the search range to leave most room?
+	// Actually, does it matter?
+	// If we have 8...8... and we pick the second 8, we have fewer options for the rest.
+	// So we should pick the *first* occurrence of the max digit to maximize remaining options.
+	// slices.Index returns the first index.
+	idx := slices.Index(bank, maxDigit)
+
+	return int64(maxDigit)*int64(math.Pow10(digits-1)) + maxJoltage(bank[idx+1:], digits-1)
+}
+
 func main() {
 	utils.LoadEnv()
 	raw, err := utils.GetPuzzleInput(2025, 3)
@@ -120,4 +165,5 @@ func main() {
 	}
 	fmt.Println("Part 1:", part1(input))
 	fmt.Println("Part 2:", part2(input))
+	fmt.Println("Part 3:", part3(input))
 }
