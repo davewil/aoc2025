@@ -32,7 +32,6 @@ func part1(banks [][]int) int {
 }
 
 func getHighestPair(bank []int) int {
-	// Create a map of value -> indices for this algorithm
 	indices := make(map[int][]int)
 	for i, val := range bank {
 		indices[val] = append(indices[val], i)
@@ -75,7 +74,6 @@ func part2(banks [][]int) int64 {
 }
 
 func getHighestJoltage(bank []int) int64 {
-	// Work directly with the slice of digits
 	b := make([]int, len(bank))
 	copy(b, bank)
 
