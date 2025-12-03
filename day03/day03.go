@@ -1,20 +1,120 @@
 package main
 
 import (
-    "fmt"
-    utils "github.com/davewil/aoc-utils"
+	"fmt"
+
+	utils "github.com/davewil/aoc-utils"
 )
 
-func parseInput(raw string) ([]string, error) { return []string{}, nil }
-func part1(lines []string) int { return 0 }
-func part2(lines []string) int { return 0 }
+func parseInput(raw string) ([][]int, error) {
+	lines := utils.ReadLines(raw)
+	banks := make([][]int, len(lines))
+	for i, line := range lines {
+		nums := make([]int, len(line))
+		for n := 0; n < len(line); n++ {
+			num := int(line[n] - '0')
+			nums[n] = num
+		}
+		banks[i] = nums
+	}
+
+	return banks, nil
+}
+
+func part1(banks [][]int) int {
+	total := 0
+
+	for _, bank := range banks {
+		total += getHighestPair(bank)
+	}
+
+	return total
+}
+
+func getHighestPair(bank []int) int {
+	// Create a map of value -> indices for this algorithm
+	indices := make(map[int][]int)
+	for i, val := range bank {
+		indices[val] = append(indices[val], i)
+	}
+
+	for x := 9; x >= 0; x-- {
+		xIndices, ok := indices[x]
+		if !ok {
+			continue
+		}
+
+		earliestX := xIndices[0]
+
+		for y := 9; y >= 0; y-- {
+			yIndices, ok := indices[y]
+			if !ok {
+				continue
+			}
+
+			lastY := yIndices[len(yIndices)-1]
+
+			if lastY > earliestX {
+				return x*10 + y
+			}
+		}
+	}
+
+	return -1
+}
+
+func part2(banks [][]int) int64 {
+	var total int64
+
+	for _, bank := range banks {
+		joltage := getHighestJoltage(bank)
+		total += joltage
+	}
+
+	return total
+}
+
+func getHighestJoltage(bank []int) int64 {
+	// Work directly with the slice of digits
+	b := make([]int, len(bank))
+	copy(b, bank)
+
+	i := 0
+	for len(b) > 12 {
+		if i >= len(b)-1 {
+			lastIdx := len(b) - 1
+			b = b[:lastIdx]
+			i = 0
+		} else if b[i] < b[i+1] {
+			b = append(b[:i], b[i+1:]...)
+			if i > 0 {
+				i--
+			}
+		} else {
+			i++
+		}
+	}
+
+	var result int64
+	for _, digit := range b {
+		result = result*10 + int64(digit)
+	}
+
+	return result
+}
 
 func main() {
-    utils.LoadEnv()
-    raw, err := utils.GetPuzzleInput(2025, 3)
-    if err != nil { fmt.Println("Error fetching input:", err); return }
-    lines, err := parseInput(raw)
-    if err != nil { fmt.Println("Error parsing input:", err); return }
-    fmt.Println("Part 1:", part1(lines))
-    fmt.Println("Part 2:", part2(lines))
+	utils.LoadEnv()
+	raw, err := utils.GetPuzzleInput(2025, 3)
+	if err != nil {
+		fmt.Println("Error fetching input:", err)
+		return
+	}
+	input, err := parseInput(raw)
+	if err != nil {
+		fmt.Println("Error parsing input:", err)
+		return
+	}
+	fmt.Println("Part 1:", part1(input))
+	fmt.Println("Part 2:", part2(input))
 }
