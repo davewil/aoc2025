@@ -78,17 +78,22 @@ func getHighestJoltage(bank []int) int64 {
 	copy(b, bank)
 
 	i := 0
+	//loop until only 12 digits remain
 	for len(b) > 12 {
+		//remove last digit if we're at the end. Either all equal or ever decreasing
 		if i >= len(b)-1 {
 			lastIdx := len(b) - 1
 			b = b[:lastIdx]
 			i = 0
 		} else if b[i] < b[i+1] {
+			//remove current digit if next digit is larger
 			b = append(b[:i], b[i+1:]...)
+			//if we're not at the start, step back one to re-evaluate previous digit
 			if i > 0 {
 				i--
 			}
 		} else {
+			//keep going
 			i++
 		}
 	}
