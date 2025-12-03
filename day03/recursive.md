@@ -15,52 +15,29 @@ Instead of removing digits, this approach **selects** the best digit at each pos
 ## Implementation
 
 ```go
+import (
+	"math"
+	"slices"
+)
+
 func getHighestJoltage(bank []int) int64 {
 	return maxJoltage(bank, 12)
 }
 
 func maxJoltage(bank []int, digits int) int64 {
 	if digits == 1 {
-		return int64(max(bank))
+		return int64(slices.Max(bank))
 	}
 
 	// Find max digit in the range where we can still get enough remaining digits
-	maxDigit := max(bank[:len(bank)-(digits-1)])
-	idx := indexOf(bank, maxDigit)
+	maxDigit := slices.Max(bank[:len(bank)-(digits-1)])
+	idx := slices.Index(bank, maxDigit)
 
-	return int64(maxDigit)*pow10(digits-1) + maxJoltage(bank[idx+1:], digits-1)
-}
-
-func max(slice []int) int {
-	if len(slice) == 0 {
-		return 0
-	}
-	m := slice[0]
-	for _, v := range slice[1:] {
-		if v > m {
-			m = v
-		}
-	}
-	return m
-}
-
-func indexOf(slice []int, value int) int {
-	for i, v := range slice {
-		if v == value {
-			return i
-		}
-	}
-	return -1
-}
-
-func pow10(n int) int64 {
-	result := int64(1)
-	for i := 0; i < n; i++ {
-		result *= 10
-	}
-	return result
+	return int64(maxDigit)*int64(math.Pow10(digits-1)) + maxJoltage(bank[idx+1:], digits-1)
 }
 ```
+
+That's it! No helper functions needed - `slices.Max()`, `slices.Index()`, and `math.Pow10()` handle everything.
 
 ## Example
 
@@ -87,10 +64,10 @@ For input `818181` selecting 3 digits:
 ## Comparison with Iterative Approach
 
 ### Advantages
-- More mathematically elegant
+- Much more concise and elegant
 - Easier to reason about the algorithm
-- Less code overall
 - Directly expresses "pick the best at each position"
+- Uses standard library functions
 
 ### Disadvantages
 - Creates slice copies on each recursive call (expensive in Go)
