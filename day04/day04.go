@@ -10,7 +10,10 @@ type Coord2D struct {
 	X, Y int
 }
 
-const maxNeighborsToRemove = 3
+const (
+	maxNeighborsToRemove = 3
+	targetRune           = '@'
+)
 
 var directions = [][2]int{
 	{0, -1},  // Up
@@ -40,7 +43,7 @@ func parseInput(raw string) (*utils.Grid[rune], error) {
 
 func part1(grid *utils.Grid[rune]) int {
 	acc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: 0}
-	removedRolls := removeRolls(acc, grid)
+	removedRolls := removeRolls(acc, grid, targetRune)
 	return len(removedRolls)
 }
 
@@ -50,12 +53,12 @@ func part2(grid *utils.Grid[rune]) int {
 	return removedRolls
 }
 
-func removeRolls(acc Accumulator, grid *utils.Grid[rune]) []Coord2D {
+func removeRolls(acc Accumulator, grid *utils.Grid[rune], target rune) []Coord2D {
 	if acc.CurrentPosition.Y >= grid.Rows {
 		return acc.Removed
 	}
-	rollsAroundCurrentPosition := countNeighbors(grid, acc.CurrentPosition, '@')
-	if grid.Get(acc.CurrentPosition.X, acc.CurrentPosition.Y) == '@' && rollsAroundCurrentPosition <= maxNeighborsToRemove {
+	rollsAroundCurrentPosition := countNeighbors(grid, acc.CurrentPosition, target)
+	if grid.Get(acc.CurrentPosition.X, acc.CurrentPosition.Y) == target && rollsAroundCurrentPosition <= maxNeighborsToRemove {
 		acc.Removed = append(acc.Removed, acc.CurrentPosition)
 	}
 	nextPos, ok := nextPosition(acc.CurrentPosition, grid)
@@ -63,7 +66,7 @@ func removeRolls(acc Accumulator, grid *utils.Grid[rune]) []Coord2D {
 		return acc.Removed
 	}
 	acc.CurrentPosition = nextPos
-	return removeRolls(acc, grid)
+	return removeRolls(acc, grid, target)
 }
 
 func countNeighbors(grid *utils.Grid[rune], pos Coord2D, target rune) int {
@@ -90,7 +93,7 @@ func nextPosition(pos Coord2D, grid *utils.Grid[rune]) (Coord2D, bool) {
 }
 
 func keepRemovingRolls(acc Accumulator, grid *utils.Grid[rune]) int {
-	removedRolls := removeRolls(Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}}, grid)
+	removedRolls := removeRolls(Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}}, grid, targetRune)
 	if len(removedRolls) == 0 {
 		return acc.RemovedCount
 	}
