@@ -37,6 +37,7 @@ func parseInput(raw string) (*utils.Grid[rune], error) {
 	}
 	return grid, nil
 }
+
 func part1(grid *utils.Grid[rune]) int {
 	acc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: 0}
 	removedRolls := removeRolls(acc, grid)
