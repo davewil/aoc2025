@@ -39,4 +39,3 @@ func BenchmarkPart2(b *testing.B) {
 		part2(benchData, 12)
 	}
 }
-
