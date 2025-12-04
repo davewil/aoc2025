@@ -24,6 +24,7 @@ var directions = [][2]int{
 type Accumulator struct {
 	CurrentPosition Coord2D
 	Removed         []Coord2D
+	RemovedCount    int
 }
 
 func nextPosition(pos Coord2D, grid *utils.Grid[rune]) (Coord2D, bool) {
@@ -48,17 +49,15 @@ func parseInput(raw string) (*utils.Grid[rune], error) {
 }
 
 func part1(grid *utils.Grid[rune]) int {
-	acc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}}
-	removedRolls := removeRolls(acc, grid)
+	acc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: 0}
+	removedRolls, _ := removeRolls(acc, grid)
 	return len(removedRolls)
 }
 
-func removeRolls(acc Accumulator, grid *utils.Grid[rune]) []Coord2D {
-	if acc.CurrentPosition.Y >= grid.Rows {
-		return acc.Removed
+func removeRolls(acc Accumulator, grid *utils.Grid[rune]) ([]Coord2D, int) {
+	if acc.CurrentPosition.Y >= grid.Rows && len(acc.Removed) == 0 {
+		return acc.Removed, 0
 	}
-	// Perform test if roll can be removed
-	// For each direction, check if there is a roll in that direction if there are fewer than 4 rolls remove
 	rollsAroundCurrentPosition := 0
 	for _, dir := range directions {
 		newX := acc.CurrentPosition.X + dir[0]
@@ -74,14 +73,33 @@ func removeRolls(acc Accumulator, grid *utils.Grid[rune]) []Coord2D {
 	}
 	nextPos, ok := nextPosition(acc.CurrentPosition, grid)
 	if !ok {
-		return acc.Removed
+		return acc.Removed, len(acc.Removed)
 	}
 	acc.CurrentPosition = nextPos
+	acc.RemovedCount = len(acc.Removed)
 	return removeRolls(acc, grid)
 }
 
 func part2(grid *utils.Grid[rune]) int {
-	return 0
+	acc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: 0}
+	removedRolls := keepRemovingRolls(acc, grid)
+	return removedRolls
+}
+
+func keepRemovingRolls(acc Accumulator, grid *utils.Grid[rune]) int {
+	removedRolls, removedCount := removeRolls(acc, grid)
+	if removedCount == 0 {
+		return acc.RemovedCount
+	}
+
+	//use removedRolls to update grid, don't Clone grid, just updateuse grid.Set to set removed positions to '.'
+	for _, coord := range removedRolls {
+		grid.Set(coord.X, coord.Y, '.')
+	}
+
+	// Reset accumulator
+	newAcc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: acc.RemovedCount + removedCount}
+	return keepRemovingRolls(newAcc, grid)
 }
 
 func main() {
