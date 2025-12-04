@@ -32,3 +32,16 @@ func BenchmarkPart3Iterative(b *testing.B) {
 		part3(grid)
 	}
 }
+
+func BenchmarkPart4Map(b *testing.B) {
+	utils.LoadEnv()
+	rawBytes, err := os.ReadFile("input.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	raw := string(rawBytes)
+	for i := 0; i < b.N; i++ {
+		grid, _ := parseInput(raw)
+		part4(grid)
+	}
+}

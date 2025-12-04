@@ -123,6 +123,9 @@ func main() {
 	// Reset grid for part 3 since part 2 mutates it
 	lines, _ = parseInput(raw)
 	fmt.Println("Part 3:", part3(lines))
+	// Reset grid for part 4
+	lines, _ = parseInput(raw)
+	fmt.Println("Part 4:", part4(lines))
 }
 
 // part3 is the iterative version of part2.
@@ -149,6 +152,51 @@ func part3(grid *utils.Grid[rune]) int {
 
 		for _, coord := range removedInRound {
 			grid.Set(coord.X, coord.Y, '.')
+		}
+		totalRemoved += len(removedInRound)
+	}
+	return totalRemoved
+}
+
+// part4 uses a map instead of a grid.
+func part4(grid *utils.Grid[rune]) int {
+	// Convert grid to map
+	m := make(map[Coord2D]rune)
+	for y := 0; y < grid.Rows; y++ {
+		for x := 0; x < grid.Cols; x++ {
+			m[Coord2D{X: x, Y: y}] = grid.Get(x, y)
+		}
+	}
+
+	totalRemoved := 0
+	rows, cols := grid.Rows, grid.Cols
+
+	for {
+		removedInRound := []Coord2D{}
+		for y := 0; y < rows; y++ {
+			for x := 0; x < cols; x++ {
+				pos := Coord2D{X: x, Y: y}
+				if val, exists := m[pos]; exists && val == targetRune {
+					count := 0
+					for _, dir := range directions {
+						neighbor := Coord2D{X: pos.X + dir[0], Y: pos.Y + dir[1]}
+						if nVal, ok := m[neighbor]; ok && nVal == targetRune {
+							count++
+						}
+					}
+					if count <= maxNeighborsToRemove {
+						removedInRound = append(removedInRound, pos)
+					}
+				}
+			}
+		}
+
+		if len(removedInRound) == 0 {
+			break
+		}
+
+		for _, coord := range removedInRound {
+			m[coord] = '.'
 		}
 		totalRemoved += len(removedInRound)
 	}
