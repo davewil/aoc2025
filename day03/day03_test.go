@@ -27,22 +27,9 @@ func TestPart2(t *testing.T) {
 		t.Fatalf("parseInput error: %v", err)
 	}
 
-	got := part2(lines)
-	var expected int64 = 3121910778619
+	got := part2(lines, 12)
+	const expected = 3121910778619
 	if got != expected {
 		t.Errorf("part2() = %d; expected %d", got, expected)
-	}
-}
-
-func TestPart3(t *testing.T) {
-	lines, err := parseInput(exampleInput)
-	if err != nil {
-		t.Fatalf("parseInput error: %v", err)
-	}
-
-	got := part3(lines)
-	var expected int64 = 3121910778619 // Should be same as Part 2
-	if got != expected {
-		t.Errorf("part3() = %d; expected %d", got, expected)
 	}
 }

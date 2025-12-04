@@ -36,12 +36,7 @@ func BenchmarkPart1(b *testing.B) {
 
 func BenchmarkPart2(b *testing.B) {
 	for i := 0; i < b.N; i++ {
-		part2(benchData)
+		part2(benchData, 12)
 	}
 }
 
-func BenchmarkPart3(b *testing.B) {
-	for i := 0; i < b.N; i++ {
-		part3(benchData)
-	}
-}
