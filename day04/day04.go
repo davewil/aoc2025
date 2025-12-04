@@ -10,6 +10,8 @@ type Coord2D struct {
 	X, Y int
 }
 
+const maxNeighborsToRemove = 3
+
 var directions = [][2]int{
 	{0, -1},  // Up
 	{1, -1},  // Up-Right
@@ -39,6 +41,17 @@ func nextPosition(pos Coord2D, grid *utils.Grid[rune]) (Coord2D, bool) {
 	return next, true
 }
 
+func countNeighbors(grid *utils.Grid[rune], pos Coord2D, target rune) int {
+	count := 0
+	for _, dir := range directions {
+		x, y := pos.X+dir[0], pos.Y+dir[1]
+		if grid.InBounds(x, y) && grid.Get(x, y) == target {
+			count++
+		}
+	}
+	return count
+}
+
 func parseInput(raw string) (*utils.Grid[rune], error) {
 	lines := utils.ReadLines(raw)
 	grid, err := utils.NewGridFromLines[rune](lines)
@@ -50,33 +63,23 @@ func parseInput(raw string) (*utils.Grid[rune], error) {
 
 func part1(grid *utils.Grid[rune]) int {
 	acc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: 0}
-	removedRolls, _ := removeRolls(acc, grid)
+	removedRolls := removeRolls(acc, grid)
 	return len(removedRolls)
 }
 
-func removeRolls(acc Accumulator, grid *utils.Grid[rune]) ([]Coord2D, int) {
-	if acc.CurrentPosition.Y >= grid.Rows && len(acc.Removed) == 0 {
-		return acc.Removed, 0
+func removeRolls(acc Accumulator, grid *utils.Grid[rune]) []Coord2D {
+	if acc.CurrentPosition.Y >= grid.Rows {
+		return acc.Removed
 	}
-	rollsAroundCurrentPosition := 0
-	for _, dir := range directions {
-		newX := acc.CurrentPosition.X + dir[0]
-		newY := acc.CurrentPosition.Y + dir[1]
-		if grid.InBounds(newX, newY) {
-			if grid.Get(newX, newY) == '@' {
-				rollsAroundCurrentPosition++
-			}
-		}
-	}
-	if grid.Get(acc.CurrentPosition.X, acc.CurrentPosition.Y) == '@' && rollsAroundCurrentPosition < 4 {
+	rollsAroundCurrentPosition := countNeighbors(grid, acc.CurrentPosition, '@')
+	if grid.Get(acc.CurrentPosition.X, acc.CurrentPosition.Y) == '@' && rollsAroundCurrentPosition <= maxNeighborsToRemove {
 		acc.Removed = append(acc.Removed, acc.CurrentPosition)
 	}
 	nextPos, ok := nextPosition(acc.CurrentPosition, grid)
 	if !ok {
-		return acc.Removed, len(acc.Removed)
+		return acc.Removed
 	}
 	acc.CurrentPosition = nextPos
-	acc.RemovedCount = len(acc.Removed)
 	return removeRolls(acc, grid)
 }
 
@@ -87,8 +90,8 @@ func part2(grid *utils.Grid[rune]) int {
 }
 
 func keepRemovingRolls(acc Accumulator, grid *utils.Grid[rune]) int {
-	removedRolls, removedCount := removeRolls(acc, grid)
-	if removedCount == 0 {
+	removedRolls := removeRolls(Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}}, grid)
+	if len(removedRolls) == 0 {
 		return acc.RemovedCount
 	}
 
@@ -96,8 +99,8 @@ func keepRemovingRolls(acc Accumulator, grid *utils.Grid[rune]) int {
 		grid.Set(coord.X, coord.Y, '.')
 	}
 
-	newAcc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: acc.RemovedCount + removedCount}
-	return keepRemovingRolls(newAcc, grid)
+	acc.RemovedCount += len(removedRolls)
+	return keepRemovingRolls(acc, grid)
 }
 
 func main() {
