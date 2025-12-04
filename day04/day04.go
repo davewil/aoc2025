@@ -126,6 +126,9 @@ func main() {
 	// Reset grid for part 4
 	lines, _ = parseInput(raw)
 	fmt.Println("Part 4:", part4(lines))
+	// Reset grid for part 5
+	lines, _ = parseInput(raw)
+	fmt.Println("Part 5:", part5(lines))
 }
 
 // part3 is the iterative version of part2.
@@ -197,6 +200,57 @@ func part4(grid *utils.Grid[rune]) int {
 
 		for _, coord := range removedInRound {
 			m[coord] = '.'
+		}
+		totalRemoved += len(removedInRound)
+	}
+	return totalRemoved
+}
+
+// part5 uses a flattened 1D slice, direct access, and buffer reuse.
+func part5(grid *utils.Grid[rune]) int {
+	rows, cols := grid.Rows, grid.Cols
+	// Flatten grid
+	flat := make([]rune, rows*cols)
+	for y := range rows {
+		for x := range cols {
+			flat[y*cols+x] = grid.Get(x, y)
+		}
+	}
+
+	totalRemoved := 0
+	// Pre-allocate buffer for removed indices (max possible is all cells)
+	removedInRound := make([]int, 0, rows*cols)
+
+	for {
+		removedInRound = removedInRound[:0] // Reset buffer
+
+		for y := range rows {
+			rowOffset := y * cols
+			for x := range cols {
+				idx := rowOffset + x
+				if flat[idx] == targetRune {
+					count := 0
+					for _, dir := range directions {
+						nx, ny := x+dir[0], y+dir[1]
+						if nx >= 0 && nx < cols && ny >= 0 && ny < rows {
+							if flat[ny*cols+nx] == targetRune {
+								count++
+							}
+						}
+					}
+					if count <= maxNeighborsToRemove {
+						removedInRound = append(removedInRound, idx)
+					}
+				}
+			}
+		}
+
+		if len(removedInRound) == 0 {
+			break
+		}
+
+		for _, idx := range removedInRound {
+			flat[idx] = '.'
 		}
 		totalRemoved += len(removedInRound)
 	}

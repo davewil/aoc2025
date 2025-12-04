@@ -45,3 +45,16 @@ func BenchmarkPart4Map(b *testing.B) {
 		part4(grid)
 	}
 }
+
+func BenchmarkPart5Optimized(b *testing.B) {
+	utils.LoadEnv()
+	rawBytes, err := os.ReadFile("input.txt")
+	if err != nil {
+		b.Fatal(err)
+	}
+	raw := string(rawBytes)
+	for i := 0; i < b.N; i++ {
+		grid, _ := parseInput(raw)
+		part5(grid)
+	}
+}
