@@ -92,12 +92,10 @@ func keepRemovingRolls(acc Accumulator, grid *utils.Grid[rune]) int {
 		return acc.RemovedCount
 	}
 
-	//use removedRolls to update grid, don't Clone grid, just updateuse grid.Set to set removed positions to '.'
 	for _, coord := range removedRolls {
 		grid.Set(coord.X, coord.Y, '.')
 	}
 
-	// Reset accumulator
 	newAcc := Accumulator{CurrentPosition: Coord2D{X: 0, Y: 0}, Removed: []Coord2D{}, RemovedCount: acc.RemovedCount + removedCount}
 	return keepRemovingRolls(newAcc, grid)
 }
