@@ -5,8 +5,8 @@ type Point struct {
 	X, Y int
 }
 
-// ManhattanDistance calculates the Manhattan distance between two points.
-// |x1 - x2| + |y1 - y2|
+// ManhattanDistance calculates the Manhattan distance (|x1 - x2| + |y1 - y2|)
+// between two points a and b.
 func ManhattanDistance(a, b Point) int {
 	return abs(a.X-b.X) + abs(a.Y-b.Y)
 }

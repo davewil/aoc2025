@@ -4,11 +4,14 @@ import (
 	"container/heap"
 )
 
-// AStar finds the shortest path from start to target using the A* algorithm.
-// T must be comparable.
-// cost(a, b) returns the cost to move from a to b.
-// heuristic(a) returns the estimated cost from a to the target.
-// Returns the path, total cost, and true if found.
+// AStar finds the shortest path from start to a target using the A* algorithm.
+// It requires:
+// - start: the starting node.
+// - isTarget: a function that returns true if a node is the target.
+// - getNeighbours: a function that returns the neighbors of a node.
+// - cost: a function that returns the cost to move between two nodes.
+// - heuristic: a function that estimates the cost from a node to the target.
+// Returns the path, total cost, and true if found; otherwise nil, 0, false.
 func AStar[T comparable](start T, isTarget func(T) bool, getNeighbours func(T) []T, cost func(T, T) int, heuristic func(T) int) ([]T, int, bool) {
 	pq := make(PriorityQueue[T], 0)
 	heap.Init(&pq)
@@ -53,9 +56,6 @@ func AStar[T comparable](start T, isTarget func(T) bool, getNeighbours func(T) [
 				gScore[v] = tentativeGScore
 				fScore := tentativeGScore + heuristic(v)
 
-				// We should update priority if it's already in PQ, but standard A* just adds it.
-				// For simplicity and performance in many cases, we just push.
-				// Duplicate entries are handled by the visited check or gScore check.
 				heap.Push(&pq, &Item[T]{
 					Value:    v,
 					Priority: fScore,
@@ -71,17 +71,17 @@ func AStar[T comparable](start T, isTarget func(T) bool, getNeighbours func(T) [
 // PriorityQueue implements heap.Interface and holds Items.
 type PriorityQueue[T any] []*Item[T]
 
+// Item represents an item in the priority queue.
 type Item[T any] struct {
-	Value    T
+	Value    T   // The value of the item; arbitrary.
 	Priority int // The priority of the item in the queue.
-	Cost     int // Actual cost so far (gScore)
+	Cost     int // The cost to reach this item.
 	Index    int // The index of the item in the heap.
 }
 
 func (pq PriorityQueue[T]) Len() int { return len(pq) }
 
 func (pq PriorityQueue[T]) Less(i, j int) bool {
-	// We want Pop to give us the lowest priority (lowest fScore) so we use <
 	return pq[i].Priority < pq[j].Priority
 }
 
@@ -102,8 +102,8 @@ func (pq *PriorityQueue[T]) Pop() any {
 	old := *pq
 	n := len(old)
 	item := old[n-1]
-	old[n-1] = nil  // avoid memory leak
-	item.Index = -1 // for safety
+	old[n-1] = nil
+	item.Index = -1
 	*pq = old[0 : n-1]
 	return item
 }

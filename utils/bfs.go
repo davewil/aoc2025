@@ -1,7 +1,11 @@
 package utils
 
-// BFS finds the shortest path from start to target.
+// BFS finds the shortest path from start to a target using Breadth-First Search.
 // T must be comparable (usable as a map key).
+// It requires:
+// - start: the starting node.
+// - isTarget: a function that returns true if a node is the target.
+// - getNeighbours: a function that returns the neighbors of a node.
 // Returns the path (including start and target) and true if found, or nil and false if not.
 func BFS[T comparable](start T, isTarget func(T) bool, getNeighbours func(T) []T) ([]T, bool) {
 	queue := []T{start}
