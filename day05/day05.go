@@ -58,8 +58,8 @@ func mergeRanges(ranges []Range) []Range {
 	merged := []Range{ranges[0]}
 	for _, current := range ranges[1:] {
 		last := &merged[len(merged)-1]
-		// Check for overlap
-		if current.Start <= last.End {
+		// Check for overlap or adjacency
+		if current.Start <= last.End+1 {
 			if current.End > last.End {
 				last.End = current.End
 			}
@@ -73,11 +73,13 @@ func mergeRanges(ranges []Range) []Range {
 func part1(input Input) int {
 	count := 0
 	for _, num := range input.Numbers {
-		for _, rng := range input.Ranges {
-			if num >= rng.Start && num <= rng.End {
-				count++
-				break
-			}
+		// Find the first range that ends at or after num
+		idx := sort.Search(len(input.Ranges), func(i int) bool {
+			return input.Ranges[i].End >= num
+		})
+		// Check if the found range actually contains num
+		if idx < len(input.Ranges) && input.Ranges[idx].Start <= num {
+			count++
 		}
 	}
 	return count
