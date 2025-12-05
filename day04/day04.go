@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 
 	utils "github.com/davewil/aoc-utils"
 )
@@ -118,17 +119,37 @@ func main() {
 		fmt.Println("Error parsing input:", err)
 		return
 	}
-	fmt.Println("Part 1:", part1(lines))
-	fmt.Println("Part 2:", part2(lines))
+
+	start := time.Now()
+	part1Result := part1(lines)
+	part1Duration := time.Since(start)
+	fmt.Printf("Part 1: %d (took %v)\n", part1Result, part1Duration)
+
+	start = time.Now()
+	part2Result := part2(lines)
+	part2Duration := time.Since(start)
+	fmt.Printf("Part 2: %d (took %v)\n", part2Result, part2Duration)
+
 	// Reset grid for part 3 since part 2 mutates it
 	lines, _ = parseInput(raw)
-	fmt.Println("Part 3:", part3(lines))
+	start = time.Now()
+	part3Result := part3(lines)
+	part3Duration := time.Since(start)
+	fmt.Printf("Part 3: %d (took %v)\n", part3Result, part3Duration)
+
 	// Reset grid for part 4
 	lines, _ = parseInput(raw)
-	fmt.Println("Part 4:", part4(lines))
+	start = time.Now()
+	part4Result := part4(lines)
+	part4Duration := time.Since(start)
+	fmt.Printf("Part 4: %d (took %v)\n", part4Result, part4Duration)
+
 	// Reset grid for part 5
 	lines, _ = parseInput(raw)
-	fmt.Println("Part 5:", part5(lines))
+	start = time.Now()
+	part5Result := part5(lines)
+	part5Duration := time.Since(start)
+	fmt.Printf("Part 5: %d (took %v)\n", part5Result, part5Duration)
 }
 
 // part3 is the iterative version of part2.
