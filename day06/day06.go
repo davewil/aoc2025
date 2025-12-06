@@ -5,6 +5,7 @@ import (
 	"slices"
 	"strconv"
 	"strings"
+	"time"
 
 	utils "github.com/davewil/aoc-utils"
 )
@@ -131,6 +132,13 @@ func main() {
 		fmt.Println("Error parsing input:", err)
 		return
 	}
-	fmt.Println("Part 1:", part1(lines))
-	fmt.Println("Part 2:", part2(lines))
+	start := time.Now()
+	part1Result := part1(lines)
+	part1Duration := time.Since(start)
+	fmt.Printf("Part 1: %d (took %v)\n", part1Result, part1Duration)
+
+	start = time.Now()
+	part2Result := part2(lines)
+	part2Duration := time.Since(start)
+	fmt.Printf("Part 2: %d (took %v)\n", part2Result, part2Duration)
 }
