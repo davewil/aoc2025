@@ -12,6 +12,7 @@ import (
 type Input struct {
 	operators   []string
 	expressions [][]int
+	rotated     *utils.Grid[rune]
 }
 
 func parseInput(raw string) (Input, error) {
@@ -21,6 +22,9 @@ func parseInput(raw string) (Input, error) {
 		fields := strings.Fields(line)
 		data = append(data, fields)
 	}
+
+	grid, _ := utils.NewGridFromLines[rune](lines)
+	rotated := grid.RotateLeft()
 
 	slices.Reverse(data)
 
@@ -39,8 +43,27 @@ func parseInput(raw string) (Input, error) {
 	input := Input{
 		operators:   data[0],
 		expressions: expressions,
+		rotated:     rotated,
 	}
 	return input, nil
+}
+
+func applyOp(op string, values []int) int {
+	switch op {
+	case "+":
+		sum := 0
+		for _, v := range values {
+			sum += v
+		}
+		return sum
+	case "*":
+		prod := 1
+		for _, v := range values {
+			prod *= v
+		}
+		return prod
+	}
+	return 0
 }
 
 func part1(input Input) int {
@@ -52,30 +75,48 @@ func part1(input Input) int {
 				col = append(col, row[i])
 			}
 		}
-
-		switch op {
-		case "+":
-			sum := 0
-			for _, v := range col {
-				sum += v
-			}
-			total += sum
-		case "*":
-			prod := 1
-			for _, v := range col {
-				prod *= v
-			}
-			total += prod
-		default:
-			fmt.Printf("Unknown operator: %s\n", op)
-		}
-
+		total += applyOp(op, col)
 	}
 	return total
 }
 
 func part2(input Input) int {
-	return 0
+	total := 0
+	operands := make([]int, 0)
+	operator := ""
+	applyPending := func() {
+		if len(operands) == 0 || operator == "" {
+			return
+		}
+		total += applyOp(operator, operands)
+		operands = operands[:0]
+		operator = ""
+	}
+	for r := 0; r < input.rotated.Rows; r++ {
+		line := string(input.rotated.Row(r))
+		trimmed := strings.TrimSpace(line)
+		if trimmed == "" {
+			applyPending()
+			continue
+		}
+		if idx := strings.IndexAny(line, "+*"); idx != -1 {
+			numberPart := strings.TrimSpace(line[:idx])
+			if numberPart != "" {
+				if num, err := strconv.Atoi(numberPart); err == nil {
+					operands = append(operands, num)
+				}
+			}
+			operator = string(line[idx])
+			applyPending()
+			continue
+		}
+		if num, err := strconv.Atoi(trimmed); err == nil {
+			operands = append(operands, num)
+		}
+	}
+	applyPending()
+
+	return total
 }
 
 func main() {
