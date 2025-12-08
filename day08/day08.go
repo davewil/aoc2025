@@ -17,6 +17,12 @@ type Point3D struct {
 	X, Y, Z int
 }
 
+// JunctionData bundles the parsed points with the graph representation built from them.
+type JunctionData struct {
+	Points []Point3D
+	Graph  *simple.WeightedUndirectedGraph
+}
+
 // pointNode wraps a Point3D so the coordinates travel with the Gonum node.
 type pointNode struct {
 	id    int64
@@ -27,54 +33,32 @@ func (n *pointNode) ID() int64 {
 	return n.id
 }
 
-func parseInput(raw string) ([]Point3D, *simple.WeightedUndirectedGraph, error) {
-	lines := utils.ReadLines(raw)
-	points := make([]Point3D, 0, len(lines))
-	graph := simple.NewWeightedUndirectedGraph(0, math.Inf(1))
-	var nextID int64
-	for idx, line := range lines {
-		line = strings.TrimSpace(line)
-		if line == "" {
-			continue
-		}
-		coords := strings.Split(line, ",")
-		if len(coords) != 3 {
-			return nil, nil, fmt.Errorf("line %d: expected 3 values, got %d", idx+1, len(coords))
-		}
-		var values [3]int
-		for i, coord := range coords {
-			num, err := strconv.Atoi(strings.TrimSpace(coord))
-			if err != nil {
-				return nil, nil, fmt.Errorf("line %d: invalid integer %q: %w", idx+1, coord, err)
-			}
-			values[i] = num
-		}
-		point := Point3D{X: values[0], Y: values[1], Z: values[2]}
-		points = append(points, point)
-		node := &pointNode{id: nextID, Point: point}
-		nextID++
-		graph.AddNode(node)
-	}
-	return points, graph, nil
+func newPointNode(id int64, p Point3D) *pointNode {
+	return &pointNode{id: id, Point: p}
 }
 
-func connectNearestPairs(g *simple.WeightedUndirectedGraph, count int) {
-	if g == nil || count <= 0 {
-		return
-	}
+type edgeCandidate struct {
+	u, v *pointNode
+	w    float64
+}
+
+func collectPointNodes(g *simple.WeightedUndirectedGraph) []*pointNode {
 	var nodes []*pointNode
+	if g == nil {
+		return nodes
+	}
 	iter := g.Nodes()
 	for iter.Next() {
 		if n, ok := iter.Node().(*pointNode); ok {
 			nodes = append(nodes, n)
 		}
 	}
+	return nodes
+}
+
+func buildEdgeCandidates(nodes []*pointNode) []edgeCandidate {
 	if len(nodes) < 2 {
-		return
-	}
-	type edgeCandidate struct {
-		u, v *pointNode
-		w    float64
+		return nil
 	}
 	edges := make([]edgeCandidate, 0, len(nodes)*(len(nodes)-1)/2)
 	for i := 0; i < len(nodes); i++ {
@@ -88,6 +72,85 @@ func connectNearestPairs(g *simple.WeightedUndirectedGraph, count int) {
 			})
 		}
 	}
+	return edges
+}
+
+func cloneJunctionGraph(src *simple.WeightedUndirectedGraph) *simple.WeightedUndirectedGraph {
+	if src == nil {
+		return nil
+	}
+	clone := simple.NewWeightedUndirectedGraph(0, math.Inf(1))
+	nodeLookup := make(map[int64]*pointNode)
+	nodes := src.Nodes()
+	for nodes.Next() {
+		if pn, ok := nodes.Node().(*pointNode); ok {
+			copyNode := newPointNode(pn.ID(), pn.Point)
+			nodeLookup[pn.ID()] = copyNode
+			clone.AddNode(copyNode)
+		}
+	}
+	edges := src.WeightedEdges()
+	for edges != nil && edges.Next() {
+		edge := edges.WeightedEdge()
+		from := nodeLookup[edge.From().ID()]
+		to := nodeLookup[edge.To().ID()]
+		if from == nil || to == nil {
+			continue
+		}
+		clone.SetWeightedEdge(simple.WeightedEdge{F: from, T: to, W: edge.Weight()})
+	}
+	return clone
+}
+
+func parsePoint3D(line string, lineNo int) (Point3D, error) {
+	coords := strings.Split(line, ",")
+	if len(coords) != 3 {
+		return Point3D{}, fmt.Errorf("line %d: expected 3 values, got %d", lineNo, len(coords))
+	}
+	var values [3]int
+	for i, coord := range coords {
+		num, err := strconv.Atoi(strings.TrimSpace(coord))
+		if err != nil {
+			return Point3D{}, fmt.Errorf("line %d: invalid integer %q: %w", lineNo, coord, err)
+		}
+		values[i] = num
+	}
+	return Point3D{X: values[0], Y: values[1], Z: values[2]}, nil
+}
+
+func parseInput(raw string) (*JunctionData, error) {
+	lines := utils.ReadLines(raw)
+	data := &JunctionData{
+		Points: make([]Point3D, 0, len(lines)),
+		Graph:  simple.NewWeightedUndirectedGraph(0, math.Inf(1)),
+	}
+	var nextID int64
+	for idx, line := range lines {
+		line = strings.TrimSpace(line)
+		if line == "" {
+			continue
+		}
+		point, err := parsePoint3D(line, idx+1)
+		if err != nil {
+			return nil, err
+		}
+		data.Points = append(data.Points, point)
+		node := newPointNode(nextID, point)
+		nextID++
+		data.Graph.AddNode(node)
+	}
+	return data, nil
+}
+
+func connectNearestPairs(g *simple.WeightedUndirectedGraph, count int) {
+	if g == nil || count <= 0 {
+		return
+	}
+	nodes := collectPointNodes(g)
+	if len(nodes) < 2 {
+		return
+	}
+	edges := buildEdgeCandidates(nodes)
 	sort.Slice(edges, func(i, j int) bool {
 		return edges[i].w < edges[j].w
 	})
@@ -123,32 +186,42 @@ func connectedComponentSizes(g graph.Graph) []int {
 		if visited[n.ID()] {
 			continue
 		}
-		size := 0
-		stack := []int64{n.ID()}
-		visited[n.ID()] = true
-		for len(stack) > 0 {
-			id := stack[len(stack)-1]
-			stack = stack[:len(stack)-1]
-			size++
-			neighbors := g.From(id)
-			for neighbors.Next() {
-				neighbor := neighbors.Node()
-				if visited[neighbor.ID()] {
-					continue
-				}
-				visited[neighbor.ID()] = true
-				stack = append(stack, neighbor.ID())
-			}
-		}
-		sizes = append(sizes, size)
+		sizes = append(sizes, visitComponent(n.ID(), g, visited))
 	}
 	return sizes
 }
 
-func part1(points []Point3D, g *simple.WeightedUndirectedGraph, connectCount int) int {
-	_ = points
-	connectNearestPairs(g, connectCount)
-	sizes := connectedComponentSizes(g)
+func visitComponent(start int64, g graph.Graph, visited map[int64]bool) int {
+	size := 0
+	stack := []int64{start}
+	visited[start] = true
+	for len(stack) > 0 {
+		id := stack[len(stack)-1]
+		stack = stack[:len(stack)-1]
+		size++
+		neighbors := g.From(id)
+		for neighbors.Next() {
+			neighbor := neighbors.Node()
+			if visited[neighbor.ID()] {
+				continue
+			}
+			visited[neighbor.ID()] = true
+			stack = append(stack, neighbor.ID())
+		}
+	}
+	return size
+}
+
+func part1(data *JunctionData, connectCount int) int {
+	if data == nil || data.Graph == nil {
+		return 0
+	}
+	workingGraph := cloneJunctionGraph(data.Graph)
+	if workingGraph == nil {
+		return 0
+	}
+	connectNearestPairs(workingGraph, connectCount)
+	sizes := connectedComponentSizes(workingGraph)
 	if len(sizes) == 0 {
 		return 0
 	}
@@ -160,8 +233,11 @@ func part1(points []Point3D, g *simple.WeightedUndirectedGraph, connectCount int
 	}
 	return product
 }
-func part2(points []Point3D, g graph.Weighted) int {
-	_, _ = points, g
+func part2(data *JunctionData) int {
+	if data == nil || data.Graph == nil {
+		return 0
+	}
+	_ = data
 	return 0
 }
 
@@ -172,13 +248,13 @@ func main() {
 		fmt.Println("Error fetching input:", err)
 		return
 	}
-	points, lavaGraph, err := parseInput(raw)
+	junctionData, err := parseInput(raw)
 	if err != nil {
 		fmt.Println("Error parsing input:", err)
 		return
 	}
 	start := time.Now()
-	part1Result := part1(points, lavaGraph, 1000)
+	part1Result := part1(junctionData, 1000)
 	fmt.Printf("Part 1: %d (took %s)\n", part1Result, time.Since(start))
-	fmt.Println("Part 2:", part2(points, lavaGraph))
+	fmt.Println("Part 2:", part2(junctionData))
 }

@@ -26,11 +26,11 @@ var exampleInput = `162,817,812
 425,690,689`
 
 func TestPart1(t *testing.T) {
-	points, g, err := parseInput(exampleInput)
+	data, err := parseInput(exampleInput)
 	if err != nil {
 		t.Fatalf("parseInput error: %v", err)
 	}
-	got := part1(points, g, 10)
+	got := part1(data, 10)
 	expected := 40
 	if got != expected {
 		t.Errorf("part1() = %d; want %d", got, expected)
@@ -38,11 +38,11 @@ func TestPart1(t *testing.T) {
 }
 
 func TestPart2(t *testing.T) {
-	points, g, err := parseInput(exampleInput)
+	data, err := parseInput(exampleInput)
 	if err != nil {
 		t.Fatalf("parseInput error: %v", err)
 	}
-	got := part2(points, g)
+	got := part2(data)
 	expected := 0
 	if got != expected {
 		t.Errorf("part2() = %d; want %d", got, expected)
