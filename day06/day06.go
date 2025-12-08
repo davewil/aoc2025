@@ -58,6 +58,7 @@ func applyOp(op string, values []int) int {
 		}
 		return sum
 	case "*":
+
 		prod := 1
 		for _, v := range values {
 			prod *= v
