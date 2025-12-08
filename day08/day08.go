@@ -6,6 +6,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	utils "github.com/davewil/aoc-utils"
 	"gonum.org/v1/gonum/graph"
@@ -68,27 +69,38 @@ func connectNearestPairs(g *simple.WeightedUndirectedGraph, count int) {
 			nodes = append(nodes, n)
 		}
 	}
-	for range count {
-		bestDist := math.Inf(1)
-		var bestU, bestV *pointNode
-		for i := 0; i < len(nodes); i++ {
-			for j := i + 1; j < len(nodes); j++ {
-				u := nodes[i]
-				v := nodes[j]
-				if g.HasEdgeBetween(u.ID(), v.ID()) {
-					continue
-				}
-				d := straightLineDistance(u.Point, v.Point)
-				if d < bestDist {
-					bestDist = d
-					bestU, bestV = u, v
-				}
-			}
+	if len(nodes) < 2 {
+		return
+	}
+	type edgeCandidate struct {
+		u, v *pointNode
+		w    float64
+	}
+	edges := make([]edgeCandidate, 0, len(nodes)*(len(nodes)-1)/2)
+	for i := 0; i < len(nodes); i++ {
+		for j := i + 1; j < len(nodes); j++ {
+			u := nodes[i]
+			v := nodes[j]
+			edges = append(edges, edgeCandidate{
+				u: u,
+				v: v,
+				w: straightLineDistance(u.Point, v.Point),
+			})
 		}
-		if bestU == nil || bestV == nil {
+	}
+	sort.Slice(edges, func(i, j int) bool {
+		return edges[i].w < edges[j].w
+	})
+	added := 0
+	for _, edge := range edges {
+		if added >= count {
 			break
 		}
-		g.SetWeightedEdge(simple.WeightedEdge{F: bestU, T: bestV, W: bestDist})
+		if g.HasEdgeBetween(edge.u.ID(), edge.v.ID()) {
+			continue
+		}
+		g.SetWeightedEdge(simple.WeightedEdge{F: edge.u, T: edge.v, W: edge.w})
+		added++
 	}
 }
 
@@ -141,12 +153,9 @@ func part1(points []Point3D, g *simple.WeightedUndirectedGraph, connectCount int
 		return 0
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(sizes)))
-	limit := 3
-	if len(sizes) < limit {
-		limit = len(sizes)
-	}
+	limit := min(len(sizes), 3)
 	product := 1
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		product *= sizes[i]
 	}
 	return product
@@ -168,6 +177,8 @@ func main() {
 		fmt.Println("Error parsing input:", err)
 		return
 	}
-	fmt.Println("Part 1:", part1(points, lavaGraph, 1000))
+	start := time.Now()
+	part1Result := part1(points, lavaGraph, 1000)
+	fmt.Printf("Part 1: %d (took %s)\n", part1Result, time.Since(start))
 	fmt.Println("Part 2:", part2(points, lavaGraph))
 }
