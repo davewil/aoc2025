@@ -42,6 +42,45 @@ type edgeCandidate struct {
 	w    float64
 }
 
+type unionFind struct {
+	parent map[int64]int64
+	rank   map[int64]int
+}
+
+func newUnionFind(nodes []*pointNode) *unionFind {
+	uf := &unionFind{
+		parent: make(map[int64]int64, len(nodes)),
+		rank:   make(map[int64]int, len(nodes)),
+	}
+	for _, n := range nodes {
+		uf.parent[n.ID()] = n.ID()
+	}
+	return uf
+}
+
+func (uf *unionFind) find(x int64) int64 {
+	if uf.parent[x] != x {
+		uf.parent[x] = uf.find(uf.parent[x])
+	}
+	return uf.parent[x]
+}
+
+func (uf *unionFind) union(a, b int64) bool {
+	rootA := uf.find(a)
+	rootB := uf.find(b)
+	if rootA == rootB {
+		return false
+	}
+	if uf.rank[rootA] < uf.rank[rootB] {
+		rootA, rootB = rootB, rootA
+	}
+	uf.parent[rootB] = rootA
+	if uf.rank[rootA] == uf.rank[rootB] {
+		uf.rank[rootA]++
+	}
+	return true
+}
+
 func collectPointNodes(g *simple.WeightedUndirectedGraph) []*pointNode {
 	var nodes []*pointNode
 	if g == nil {
@@ -167,6 +206,37 @@ func connectNearestPairs(g *simple.WeightedUndirectedGraph, count int) {
 	}
 }
 
+func connectUntilSingleCircuit(g *simple.WeightedUndirectedGraph) (*edgeCandidate, bool) {
+	if g == nil {
+		return nil, false
+	}
+	nodes := collectPointNodes(g)
+	if len(nodes) < 2 {
+		return nil, false
+	}
+	edges := buildEdgeCandidates(nodes)
+	sort.Slice(edges, func(i, j int) bool {
+		return edges[i].w < edges[j].w
+	})
+	uf := newUnionFind(nodes)
+	components := len(nodes)
+	var last edgeCandidate
+	found := false
+	for _, edge := range edges {
+		if !uf.union(edge.u.ID(), edge.v.ID()) {
+			continue
+		}
+		g.SetWeightedEdge(simple.WeightedEdge{F: edge.u, T: edge.v, W: edge.w})
+		components--
+		last = edge
+		found = true
+		if components == 1 {
+			return &last, true
+		}
+	}
+	return nil, found && components == 1
+}
+
 func straightLineDistance(a, b Point3D) float64 {
 	dx := float64(a.X - b.X)
 	dy := float64(a.Y - b.Y)
@@ -237,8 +307,15 @@ func part2(data *JunctionData) int {
 	if data == nil || data.Graph == nil {
 		return 0
 	}
-	_ = data
-	return 0
+	workingGraph := cloneJunctionGraph(data.Graph)
+	if workingGraph == nil {
+		return 0
+	}
+	lastEdge, ok := connectUntilSingleCircuit(workingGraph)
+	if !ok || lastEdge == nil {
+		return 0
+	}
+	return lastEdge.u.Point.X * lastEdge.v.Point.X
 }
 
 func main() {
@@ -256,5 +333,7 @@ func main() {
 	start := time.Now()
 	part1Result := part1(junctionData, 1000)
 	fmt.Printf("Part 1: %d (took %s)\n", part1Result, time.Since(start))
-	fmt.Println("Part 2:", part2(junctionData))
+	start = time.Now()
+	part2Result := part2(junctionData)
+	fmt.Printf("Part 2: %d (took %s)\n", part2Result, time.Since(start))
 }
