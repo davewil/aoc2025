@@ -39,7 +39,7 @@ func TestPart2(t *testing.T) {
 		t.Fatalf("parseInput error: %v", err)
 	}
 	got := part2(lines)
-	expected := 0
+	expected := 40
 	if got != expected {
 		t.Errorf("part2() = %d; want %d", got, expected)
 	}
