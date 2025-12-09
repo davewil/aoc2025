@@ -94,6 +94,7 @@ func parseInput(raw string) (*JunctionSet, error) {
 		}
 		points = append(points, point)
 	}
+	// Precompute every pair of points once so both parts can reuse the sorted ordering.
 	edges := buildEdges(points)
 	return &JunctionSet{Points: points, Edges: edges}, nil
 }
@@ -104,11 +105,12 @@ func buildEdges(points []Point3D) []edge {
 		return nil
 	}
 	edges := make([]edge, 0, n*(n-1)/2)
-	for i := 0; i < n; i++ {
+	for i := range n {
 		for j := i + 1; j < n; j++ {
 			edges = append(edges, edge{a: i, b: j, w: squaredDistance(points[i], points[j])})
 		}
 	}
+	// Sort ascending so the first edges always represent the nearest junctions.
 	sort.Slice(edges, func(i, j int) bool {
 		return edges[i].w < edges[j].w
 	})
@@ -143,21 +145,20 @@ func part1(data *JunctionSet, connectCount int) int {
 		connectCount = len(data.Edges)
 	}
 	uf := newUnionFind(len(data.Points))
+	// Union only the first connectCount edges, which are the closest junction pairs.
 	for i := 0; i < connectCount; i++ {
 		e := data.Edges[i]
 		uf.union(e.a, e.b)
 	}
+	// Grab the current component sizes and multiply the three largest.
 	sizes := componentSizes(uf)
 	if len(sizes) == 0 {
 		return 0
 	}
 	sort.Sort(sort.Reverse(sort.IntSlice(sizes)))
-	limit := 3
-	if len(sizes) < limit {
-		limit = len(sizes)
-	}
+	limit := min(len(sizes), 3)
 	product := 1
-	for i := 0; i < limit; i++ {
+	for i := range limit {
 		product *= sizes[i]
 	}
 	return product
@@ -169,6 +170,7 @@ func part2(data *JunctionSet) int {
 	}
 	uf := newUnionFind(len(data.Points))
 	components := len(data.Points)
+	// Keep adding the next closest edge until the structure collapses into one circuit.
 	for _, e := range data.Edges {
 		if !uf.union(e.a, e.b) {
 			continue
