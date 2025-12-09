@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	utils "github.com/davewil/aoc-utils"
 )
@@ -53,48 +54,22 @@ type Edge struct {
 	from, to Point2D
 }
 
-func buildPerimeterAndEdges(redTiles []Point2D) ([]Point2D, []Edge) {
-	perimeter := make([]Point2D, 0, len(redTiles)*2)
+func buildEdges(redTiles []Point2D) []Edge {
 	edges := make([]Edge, 0, len(redTiles))
-
-	appendEdgePoints := func(fromPoint, toPoint Point2D) {
-		if fromPoint.X == toPoint.X {
-			// vertical edge
-			step := 1
-			if toPoint.Y < fromPoint.Y {
-				step = -1
-			}
-			for y := fromPoint.Y + step; y != toPoint.Y; y += step {
-				perimeter = append(perimeter, Point2D{X: fromPoint.X, Y: y})
-			}
-		} else if fromPoint.Y == toPoint.Y {
-			// horizontal edge
-			step := 1
-			if toPoint.X < fromPoint.X {
-				step = -1
-			}
-			for x := fromPoint.X + step; x != toPoint.X; x += step {
-				perimeter = append(perimeter, Point2D{X: x, Y: fromPoint.Y})
-			}
-		}
-	}
-
 	for idx := range redTiles {
 		fromPoint := redTiles[idx]
 		toPoint := redTiles[(idx+1)%len(redTiles)]
 		edges = append(edges, Edge{from: fromPoint, to: toPoint})
-		perimeter = append(perimeter, fromPoint)
-		appendEdgePoints(fromPoint, toPoint)
 	}
-
-	return perimeter, edges
+	return edges
 }
 
 func part2(redTiles []Point2D) int {
 	if len(redTiles) == 0 {
 		return 0
 	}
-	perimeter, edges := buildPerimeterAndEdges(redTiles)
+	edges := buildEdges(redTiles)
+	insideCache := make(map[int64]bool, len(redTiles)*len(redTiles))
 
 	maxArea := 0
 	for from := 0; from < len(redTiles)-1; from++ {
@@ -112,13 +87,19 @@ func part2(redTiles []Point2D) int {
 				continue
 			}
 
-			centerX := float64(minX+maxX) / 2
-			centerY := float64(minY+maxY) / 2
-			if !pointInPolygon(centerX, centerY, redTiles) {
+			centerSumX := minX + maxX
+			centerSumY := minY + maxY
+			cacheKey := (int64(centerSumX) << 32) | int64(uint32(centerSumY))
+			inside, ok := insideCache[cacheKey]
+			if !ok {
+				inside = pointInPolygonCenter(centerSumX, centerSumY, redTiles)
+				insideCache[cacheKey] = inside
+			}
+			if !inside {
 				continue
 			}
 
-			if hasPerimeterPointInside(perimeter, minX, maxX, minY, maxY) {
+			if hasInteriorVertex(redTiles, minX, maxX, minY, maxY, fromPoint, toPoint) {
 				continue
 			}
 
@@ -171,8 +152,11 @@ func strictOverlap(aMin, aMax, bMin, bMax int) bool {
 	return aMax > bMin && bMax > aMin
 }
 
-func hasPerimeterPointInside(perimeter []Point2D, minX, maxX, minY, maxY int) bool {
-	for _, p := range perimeter {
+func hasInteriorVertex(vertices []Point2D, minX, maxX, minY, maxY int, skipA, skipB Point2D) bool {
+	for _, p := range vertices {
+		if (p == skipA) || (p == skipB) {
+			continue
+		}
 		if p.X > minX && p.X < maxX && p.Y > minY && p.Y < maxY {
 			return true
 		}
@@ -180,14 +164,26 @@ func hasPerimeterPointInside(perimeter []Point2D, minX, maxX, minY, maxY int) bo
 	return false
 }
 
-func pointInPolygon(x, y float64, polygon []Point2D) bool {
+func pointInPolygonCenter(x2, y2 int, polygon []Point2D) bool {
 	inside := false
 	for i := range polygon {
 		j := (i + len(polygon) - 1) % len(polygon)
-		xi, yi := float64(polygon[i].X), float64(polygon[i].Y)
-		xj, yj := float64(polygon[j].X), float64(polygon[j].Y)
-		intersect := ((yi > y) != (yj > y)) && (x < (xj-xi)*(y-yi)/(yj-yi)+xi)
-		if intersect {
+		yi2 := polygon[i].Y * 2
+		yj2 := polygon[j].Y * 2
+		if (yi2 > y2) == (yj2 > y2) {
+			continue
+		}
+		xi2 := polygon[i].X * 2
+		xj2 := polygon[j].X * 2
+		dy := yj2 - yi2
+		if dy == 0 {
+			continue
+		}
+		dx := xj2 - xi2
+		yDelta := y2 - yi2
+		lhs := x2 * dy
+		rhs := xi2*dy + dx*yDelta
+		if (dy > 0 && lhs < rhs) || (dy < 0 && lhs > rhs) {
 			inside = !inside
 		}
 	}
@@ -206,6 +202,10 @@ func main() {
 		fmt.Println("Error parsing input:", err)
 		return
 	}
-	fmt.Println("Part 1:", part1(lines))
-	fmt.Println("Part 2:", part2(lines))
+	start := time.Now()
+	part1Result := part1(lines)
+	fmt.Printf("Part 1: %d (took %s)\n", part1Result, time.Since(start))
+	start = time.Now()
+	part2Result := part2(lines)
+	fmt.Printf("Part 2: %d (took %s)\n", part2Result, time.Since(start))
 }
