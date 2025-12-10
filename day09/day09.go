@@ -54,6 +54,10 @@ type Edge struct {
 	from, to Point2D
 }
 
+type Rectangle struct {
+	minX, minY, maxX, maxY int
+}
+
 func buildEdges(redTiles []Point2D) []Edge {
 	edges := make([]Edge, 0, len(redTiles))
 	for idx := range redTiles {
@@ -65,17 +69,35 @@ func buildEdges(redTiles []Point2D) []Edge {
 }
 
 func part2(redTiles []Point2D) int {
+	_, area := bestRectangle(redTiles)
+	return area
+}
+
+func bestRectangle(redTiles []Point2D) (Rectangle, int) {
+	best := Rectangle{}
 	if len(redTiles) == 0 {
-		return 0
+		return best, 0
 	}
+	best, area, _ := searchRectangles(redTiles, nil, 0)
+	return best, area
+}
+
+// searchRectangles iterates all vertex pairs; when cb is non-nil it will be called
+// on each new best or every sampleEvery steps (>0). Returns best rectangle, area, and steps executed.
+func searchRectangles(redTiles []Point2D, cb func(Rectangle, int, int), sampleEvery int) (Rectangle, int, int) {
+	best := Rectangle{}
 	edges := buildEdges(redTiles)
 	insideCache := make(map[int64]bool, len(redTiles)*len(redTiles))
-
 	maxArea := 0
+	steps := 0
+	if sampleEvery <= 0 {
+		sampleEvery = 0
+	}
 	for from := 0; from < len(redTiles)-1; from++ {
 		for to := from + 1; to < len(redTiles); to++ {
 			fromPoint := redTiles[from]
 			toPoint := redTiles[to]
+			steps++
 
 			minX, maxX := sort(fromPoint.X, toPoint.X)
 			minY, maxY := sort(fromPoint.Y, toPoint.Y)
@@ -106,11 +128,17 @@ func part2(redTiles []Point2D) int {
 			area := (maxX - minX + 1) * (maxY - minY + 1)
 			if area > maxArea {
 				maxArea = area
+				best = Rectangle{minX: minX, minY: minY, maxX: maxX, maxY: maxY}
+				if cb != nil {
+					cb(best, maxArea, steps)
+				}
+			} else if cb != nil && sampleEvery > 0 && steps%sampleEvery == 0 {
+				cb(best, maxArea, steps)
 			}
 		}
 	}
 
-	return maxArea
+	return best, maxArea, steps
 }
 
 func intersects(edges []Edge, from Point2D, to Point2D) bool {
