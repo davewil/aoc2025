@@ -143,9 +143,21 @@ func part2(lines Input) int {
 			config := z3.NewContextConfig()
 			ctx := z3.NewContext(config)
 			solver := z3.NewSolver(ctx)
+
+			// Hoist constants and allocate variable pool
+			intSort := ctx.IntSort()
+			zero := ctx.FromInt(0, intSort).(z3.Int)
+			varPool := make([]z3.Int, 0, 100)
+
 			for row := range jobs {
 				solver.Reset()
-				v, err := findMinPressesWithJoltagesILP(ctx, solver, row)
+
+				// Grow pool if needed
+				for len(varPool) < len(row.buttons) {
+					varPool = append(varPool, ctx.IntConst(fmt.Sprintf("b%d", len(varPool))))
+				}
+
+				v, err := findMinPressesWithJoltagesILP(ctx, solver, row, varPool, zero, intSort)
 				if err != nil {
 					results <- -1
 				} else {
@@ -175,7 +187,7 @@ func part2(lines Input) int {
 
 // Uses Z3 SMT solver with a single context and incremental push/pop for binary search.
 // Finds minimum sum of button presses subject to hitting exact joltages on each light.
-func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) (int, error) {
+func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row, varPool []z3.Int, zero z3.Int, intSort z3.Sort) (int, error) {
 	if len(row.joltages) == 0 {
 		return 0, nil
 	}
@@ -191,14 +203,10 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) 
 	nButtons := len(row.buttons)
 	nLights := len(row.joltages)
 
-	// Create integer variables for each button press count
-	buttonVars := make([]z3.Int, nButtons)
-	for i := range nButtons {
-		buttonVars[i] = ctx.IntConst(fmt.Sprintf("b%d", i))
-	}
+	// Use pooled variables
+	buttonVars := varPool[:nButtons]
 
 	// Each button >= 0
-	zero := ctx.FromInt(0, ctx.IntSort()).(z3.Int)
 	for i := range nButtons {
 		solver.Assert(buttonVars[i].GE(zero))
 	}
@@ -218,7 +226,7 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) 
 			continue
 		}
 		sum := terms[0].Add(terms[1:]...)
-		solver.Assert(sum.Eq(ctx.FromInt(int64(row.joltages[lightIdx]), ctx.IntSort()).(z3.Int)))
+		solver.Assert(sum.Eq(ctx.FromInt(int64(row.joltages[lightIdx]), intSort).(z3.Int)))
 	}
 
 	// Build total presses expression once
@@ -230,14 +238,28 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) 
 		maxSum += j
 	}
 
+	// Lower bound estimation
+	// Sum(b_j * K_j) = TotalJoltage
+	// S * MaxK >= TotalJoltage => S >= TotalJoltage / MaxK
+	maxK := 0
+	for _, btn := range row.buttons {
+		if len(btn) > maxK {
+			maxK = len(btn)
+		}
+	}
+	lo := 0
+	if maxK > 0 {
+		lo = (maxSum + maxK - 1) / maxK // ceil(maxSum / maxK)
+	}
+
 	// Model-guided binary search
-	lo, hi := 0, maxSum
+	hi := maxSum
 	best := -1
 
 	for lo <= hi {
 		mid := (lo + hi) / 2
 		solver.Push()
-		solver.Assert(totalPresses.LE(ctx.FromInt(int64(mid), ctx.IntSort()).(z3.Int)))
+		solver.Assert(totalPresses.LE(ctx.FromInt(int64(mid), intSort).(z3.Int)))
 		sat, err := solver.Check()
 		if err != nil {
 			solver.Pop()
@@ -249,7 +271,7 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) 
 			valExpr := model.Eval(totalPresses, true).(z3.Int)
 			val, _, _ := valExpr.AsInt64()
 			// model.Close() // Not available in go-z3
-			
+
 			best = int(val)
 			hi = int(val) - 1
 		} else {
