@@ -1,8 +1,8 @@
 package main
 
 import (
-	"testing"
 	"aoc2025/day10/parser"
+	"testing"
 )
 
 var exampleInput = `[.##.] (3) (1,3) (2) (2,3) (0,2) (0,1) {3,5,4,7}

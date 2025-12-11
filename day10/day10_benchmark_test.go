@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"aoc2025/day10/parser"
+
 	utils "github.com/davewil/aoc-utils"
 )
 

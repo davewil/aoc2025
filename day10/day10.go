@@ -7,8 +7,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aclements/go-z3/z3"
 	"aoc2025/day10/parser"
+
+	"github.com/aclements/go-z3/z3"
 	utils "github.com/davewil/aoc-utils"
 )
 
