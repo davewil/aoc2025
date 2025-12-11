@@ -11,7 +11,7 @@ func BenchmarkPart1(b *testing.B) {
 	utils.LoadEnv()
 	rawBytes, err := os.ReadFile("input.txt")
 	if err != nil {
-		b.Fatal(err)
+		b.Skip("input.txt missing, skipping benchmark")
 	}
 	raw := string(rawBytes)
 	for i := 0; i < b.N; i++ {
@@ -24,7 +24,7 @@ func BenchmarkPart2(b *testing.B) {
 	utils.LoadEnv()
 	rawBytes, err := os.ReadFile("input.txt")
 	if err != nil {
-		b.Fatal(err)
+		b.Skip("input.txt missing, skipping benchmark")
 	}
 	raw := string(rawBytes)
 	for i := 0; i < b.N; i++ {

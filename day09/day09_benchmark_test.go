@@ -1,15 +1,16 @@
 package main
 
 import (
-	_ "embed"
+	"os"
 	"testing"
 )
 
-//go:embed input.txt
-var benchmarkInput string
-
 func BenchmarkPart1(b *testing.B) {
-	raw := benchmarkInput
+	rawBytes, err := os.ReadFile("input.txt")
+	if err != nil {
+		b.Skip("input.txt missing, skipping benchmark")
+	}
+	raw := string(rawBytes)
 	for i := 0; i < b.N; i++ {
 		data, err := parseInput(raw)
 		if err != nil {
@@ -23,7 +24,11 @@ func BenchmarkPart1(b *testing.B) {
 }
 
 func BenchmarkPart2(b *testing.B) {
-	raw := benchmarkInput
+	rawBytes, err := os.ReadFile("input.txt")
+	if err != nil {
+		b.Skip("input.txt missing, skipping benchmark")
+	}
+	raw := string(rawBytes)
 	for i := 0; i < b.N; i++ {
 		data, err := parseInput(raw)
 		if err != nil {
