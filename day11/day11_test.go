@@ -1,6 +1,7 @@
 package main
 
 import (
+	"strings"
 	"testing"
 )
 
@@ -50,5 +51,19 @@ func TestPart2(t *testing.T) {
 	expected := 2
 	if got != expected {
 		t.Errorf("part2() = %d; want %d", got, expected)
+	}
+}
+
+func TestGraphviz(t *testing.T) {
+	graph, err := parseInput(exampleInput)
+	if err != nil {
+		t.Fatalf("parseInput error: %v", err)
+	}
+	dot := toDOT(graph)
+	if !strings.Contains(dot, "digraph G {") {
+		t.Error("Expected DOT output to contain 'digraph G {'")
+	}
+	if !strings.Contains(dot, "you -> bbb;") {
+		t.Error("Expected DOT output to contain 'you -> bbb;'")
 	}
 }

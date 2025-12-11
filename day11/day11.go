@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 	"time"
 
@@ -129,6 +130,36 @@ func part2(graph Graph) int {
 	return 0
 }
 
+func toDOT(graph Graph) string {
+	var sb strings.Builder
+	sb.WriteString("digraph G {\n")
+
+	// Create reverse mapping for names
+	idToName := make([]string, len(graph.Nodes))
+	for name, id := range graph.Nodes {
+		idToName[id] = name
+	}
+
+	// Highlight special nodes
+	specialNodes := []string{"svr", "fft", "dac", "out"}
+	for _, name := range specialNodes {
+		if _, ok := graph.Nodes[name]; ok {
+			sb.WriteString(fmt.Sprintf("  %s [style=filled, fillcolor=lightblue];\n", name))
+		}
+	}
+
+	for from, neighbors := range graph.Adj {
+		fromName := idToName[from]
+		for _, to := range neighbors {
+			toName := idToName[to]
+			sb.WriteString(fmt.Sprintf("  %s -> %s;\n", fromName, toName))
+		}
+	}
+
+	sb.WriteString("}")
+	return sb.String()
+}
+
 func main() {
 	utils.LoadEnv()
 	raw, err := utils.GetPuzzleInput(2025, 11)
@@ -140,6 +171,11 @@ func main() {
 	if err != nil {
 		fmt.Println("Error parsing input:", err)
 		return
+	}
+
+	// Save Graphviz DOT output to file
+	if err := os.WriteFile("graph.dot", []byte(toDOT(graph)), 0644); err != nil {
+		fmt.Println("Error writing graph.dot:", err)
 	}
 
 	start := time.Now()
