@@ -7,4 +7,7 @@ require (
 	github.com/davewil/aoc-utils v0.1.6
 )
 
-require github.com/joho/godotenv v1.5.1 // indirect
+require (
+	github.com/alecthomas/participle/v2 v2.1.4 // indirect
+	github.com/joho/godotenv v1.5.1 // indirect
+)

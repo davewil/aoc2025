@@ -81,3 +81,19 @@ To make this run in milliseconds rather than seconds, several engineering tricks
 
 By translating the puzzle into a system of constraints and using a state-of-the-art mathematical solver (Z3), we transform a complex search problem into a series of efficient feasibility checks. The combination of algorithmic improvements (model-guided search) and low-level optimizations (pooling, parallelism) results in a solution that is orders of magnitude faster than naive approaches.
 
+## Implementation Note: Monolithic Function
+
+An attempt was made to refactor the large `findMinPressesWithJoltagesILP` function into smaller helper functions (`setupConstraints`, `calculateBounds`, etc.) to improve readability. However, this resulted in `SIGSEGV` (segmentation faults) during concurrent execution.
+
+This instability is likely due to interactions between Go's Garbage Collector and the CGO-managed Z3 objects when passed across function boundaries. Keeping the logic within a single function scope ensures that the Z3 context and AST nodes remain valid and correctly managed throughout the solver's lifecycle, preventing memory corruption in the C bindings.
+
+## Safe Refactoring Strategy (Theoretical)
+
+If we were to refactor this code in the future, the following pattern would be required to ensure stability:
+
+1.  **Encapsulation**: Create a `Z3Session` struct to hold the `*z3.Context`, `*z3.Solver`, and variable maps. This binds the lifecycle of dependent objects to a single Go struct.
+2.  **Methods over Functions**: Implement logic as methods on this struct (e.g., `func (s *Z3Session) AddConstraints(...)`). This ensures the context is always implicitly available and reachable.
+3.  **Lifecycle Management**: Use `runtime.KeepAlive(session)` at the end of the main function. This explicitly tells the Go Garbage Collector not to finalize the session (and its underlying C pointers) until all work is complete, preventing premature cleanup during CGO calls.
+
+
+

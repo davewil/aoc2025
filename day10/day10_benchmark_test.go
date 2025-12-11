@@ -3,6 +3,7 @@ package main
 import (
 	"testing"
 
+	"aoc2025/day10/parser"
 	utils "github.com/davewil/aoc-utils"
 )
 
@@ -10,7 +11,7 @@ import (
 // go test -bench=. -benchmem ./day10
 
 var (
-	benchData Input
+	benchData parser.Input
 )
 
 func init() {
@@ -20,7 +21,7 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	benchData, err = parseInput(raw)
+	benchData, err = parser.ParseInput(raw)
 	if err != nil {
 		panic(err)
 	}

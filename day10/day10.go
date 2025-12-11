@@ -4,107 +4,33 @@ import (
 	"fmt"
 	"runtime"
 	"slices"
-	"strconv"
-	"strings"
 	"sync"
 	"time"
 
 	"github.com/aclements/go-z3/z3"
+	"aoc2025/day10/parser"
 	utils "github.com/davewil/aoc-utils"
 )
 
-type Row struct {
-	lights   []int
-	buttons  [][]int
-	joltages []int
-}
-
-type Input struct {
-	rows []Row
-}
-
-func parseInput(raw string) (Input, error) {
-	lines := utils.ReadLines(raw)
-	input := Input{}
-	for _, line := range lines {
-		row := Row{}
-		fields := strings.Fields(line)
-		if len(fields) > 1 {
-			row.lights = parseLights(fields[0])
-			row.buttons = parseButtons(fields[1 : len(fields)-1])
-			joltages, _ := parseJoltages(fields[len(fields)-1])
-			row.joltages = joltages
-		}
-		input.rows = append(input.rows, row)
-	}
-	return input, nil
-}
-
-func parseLights(s string) []int {
-	s = strings.Trim(s, "[]")
-	result := []int{}
-	for i, c := range s {
-		if c == '#' {
-			result = append(result, i)
-		}
-	}
-	return result
-}
-
-func parseButtons(s []string) [][]int {
-	result := [][]int{}
-	buttons := []int{}
-	for _, b := range s {
-		b = strings.Trim(b, "()")
-		parts := strings.SplitSeq(b, ",")
-		for part := range parts {
-			p, err := strconv.Atoi(part)
-			if err != nil {
-				fmt.Println("Failed to convert button part:", err)
-				continue
-			}
-			buttons = append(buttons, p)
-		}
-		result = append(result, buttons)
-		buttons = []int{}
-	}
-	return result
-}
-
-func parseJoltages(s string) ([]int, error) {
-	result := []int{}
-	s = strings.Trim(s, "{}")
-	parts := strings.SplitSeq(s, ",")
-	for part := range parts {
-		p, err := strconv.Atoi(part)
-		if err != nil {
-			return nil, fmt.Errorf("failed to convert part: %v", err)
-		}
-		result = append(result, p)
-	}
-	return result, nil
-
-}
-
-func part1(lines Input) int {
+func part1(lines parser.Input) int {
 	total := 0
-	for _, row := range lines.rows {
+	for _, row := range lines.Rows {
 		total += findMinPresses(row)
 	}
 	return total
 }
 
-func findMinPresses(row Row) int {
+func findMinPresses(row parser.Row) int {
 	n := rowLength(row)
 	if n == 0 {
 		return 0
 	}
-	target := maskFromIndices(row.lights)
+	target := maskFromIndices(row.Lights)
 	if target == 0 {
 		return 0
 	}
-	buttonMasks := make([]int, len(row.buttons))
-	for i, b := range row.buttons {
+	buttonMasks := make([]int, len(row.Buttons))
+	for i, b := range row.Buttons {
 		buttonMasks[i] = maskFromIndices(b)
 	}
 	maxStates := 1 << n
@@ -132,10 +58,10 @@ func findMinPresses(row Row) int {
 	return -1
 }
 
-func part2(lines Input) int {
+func part2(lines parser.Input) int {
 	numWorkers := runtime.NumCPU()
-	jobs := make(chan Row, len(lines.rows))
-	results := make(chan int, len(lines.rows))
+	jobs := make(chan parser.Row, len(lines.Rows))
+	results := make(chan int, len(lines.Rows))
 	var wg sync.WaitGroup
 
 	for range numWorkers {
@@ -153,7 +79,7 @@ func part2(lines Input) int {
 				solver.Reset()
 
 				// Grow pool if needed
-				for len(varPool) < len(row.buttons) {
+				for len(varPool) < len(row.Buttons) {
 					varPool = append(varPool, ctx.IntConst(fmt.Sprintf("b%d", len(varPool))))
 				}
 
@@ -167,7 +93,7 @@ func part2(lines Input) int {
 		})
 	}
 
-	for _, row := range lines.rows {
+	for _, row := range lines.Rows {
 		jobs <- row
 	}
 	close(jobs)
@@ -187,12 +113,12 @@ func part2(lines Input) int {
 
 // Uses Z3 SMT solver with a single context and incremental push/pop for binary search.
 // Finds minimum sum of button presses subject to hitting exact joltages on each light.
-func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row, varPool []z3.Int, zero z3.Int, intSort z3.Sort) (int, error) {
-	if len(row.joltages) == 0 {
+func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row parser.Row, varPool []z3.Int, zero z3.Int, intSort z3.Sort) (int, error) {
+	if len(row.Joltages) == 0 {
 		return 0, nil
 	}
-	if len(row.buttons) == 0 {
-		for _, v := range row.joltages {
+	if len(row.Buttons) == 0 {
+		for _, v := range row.Joltages {
 			if v != 0 {
 				return -1, fmt.Errorf("no buttons to satisfy joltages")
 			}
@@ -200,8 +126,8 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row, 
 		return 0, nil
 	}
 
-	nButtons := len(row.buttons)
-	nLights := len(row.joltages)
+	nButtons := len(row.Buttons)
+	nLights := len(row.Joltages)
 
 	// Use pooled variables
 	buttonVars := varPool[:nButtons]
@@ -214,19 +140,19 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row, 
 	// Sum of button contributions = joltage for each light
 	for lightIdx := range nLights {
 		var terms []z3.Int
-		for bIdx, btn := range row.buttons {
+		for bIdx, btn := range row.Buttons {
 			if slices.Contains(btn, lightIdx) {
 				terms = append(terms, buttonVars[bIdx])
 			}
 		}
 		if len(terms) == 0 {
-			if row.joltages[lightIdx] != 0 {
-				return -1, fmt.Errorf("light %d needs %d but no button affects it", lightIdx, row.joltages[lightIdx])
+			if row.Joltages[lightIdx] != 0 {
+				return -1, fmt.Errorf("light %d needs %d but no button affects it", lightIdx, row.Joltages[lightIdx])
 			}
 			continue
 		}
 		sum := terms[0].Add(terms[1:]...)
-		solver.Assert(sum.Eq(ctx.FromInt(int64(row.joltages[lightIdx]), intSort).(z3.Int)))
+		solver.Assert(sum.Eq(ctx.FromInt(int64(row.Joltages[lightIdx]), intSort).(z3.Int)))
 	}
 
 	// Build total presses expression once
@@ -234,7 +160,7 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row, 
 
 	// Upper bound
 	maxSum := 0
-	for _, j := range row.joltages {
+	for _, j := range row.Joltages {
 		maxSum += j
 	}
 
@@ -242,7 +168,7 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row, 
 	// Sum(b_j * K_j) = TotalJoltage
 	// S * MaxK >= TotalJoltage => S >= TotalJoltage / MaxK
 	maxK := 0
-	for _, btn := range row.buttons {
+	for _, btn := range row.Buttons {
 		if len(btn) > maxK {
 			maxK = len(btn)
 		}
@@ -286,14 +212,14 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row, 
 	return best, nil
 }
 
-func rowLength(r Row) int {
+func rowLength(r parser.Row) int {
 	max := 0
-	for _, idx := range r.lights {
+	for _, idx := range r.Lights {
 		if idx+1 > max {
 			max = idx + 1
 		}
 	}
-	for _, b := range r.buttons {
+	for _, b := range r.Buttons {
 		for _, idx := range b {
 			if idx+1 > max {
 				max = idx + 1
@@ -318,7 +244,7 @@ func main() {
 		fmt.Println("Error fetching input:", err)
 		return
 	}
-	lines, err := parseInput(raw)
+	lines, err := parser.ParseInput(raw)
 	if err != nil {
 		fmt.Println("Error parsing input:", err)
 		return
