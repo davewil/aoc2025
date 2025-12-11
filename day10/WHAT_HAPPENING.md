@@ -80,3 +80,4 @@ To make this run in milliseconds rather than seconds, several engineering tricks
 ## Summary
 
 By translating the puzzle into a system of constraints and using a state-of-the-art mathematical solver (Z3), we transform a complex search problem into a series of efficient feasibility checks. The combination of algorithmic improvements (model-guided search) and low-level optimizations (pooling, parallelism) results in a solution that is orders of magnitude faster than naive approaches.
+
