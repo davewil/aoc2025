@@ -14,7 +14,7 @@ This repository focuses on **clean code**, **performance**, and exploring advanc
 | Day | Title | Approach / Key Tech |
 |:---:|:---|:---|
 | **10** | **The Z3 Solver** | Used **Microsoft Z3** (SMT Solver) via CGO to solve an Integer Linear Programming problem. Includes parallel execution and model-guided binary search. [Read the Deep Dive](./day10/WHAT_HAPPENING.md) |
-| **09** | **Disk Fragmenter** | Implemented a custom memory allocator simulation. |
+| **09** | **Tile Geometry** | Geometric algorithms to find maximum areas and optimal rectangles from coordinate sets. |
 | **03** | **Recursion** | Explored recursive patterns and memoization. |
 
 ## 📊 Progress
