@@ -1,10 +1,12 @@
 package main
 
 import (
-	"slices"
 	"fmt"
+	"runtime"
+	"slices"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/aclements/go-z3/z3"
@@ -131,14 +133,41 @@ func findMinPresses(row Row) int {
 }
 
 func part2(lines Input) int {
-	// Create single context for all rows to avoid overhead
-	config := z3.NewContextConfig()
-	ctx := z3.NewContext(config)
+	numWorkers := runtime.NumCPU()
+	jobs := make(chan Row, len(lines.rows))
+	results := make(chan int, len(lines.rows))
+	var wg sync.WaitGroup
+
+	for i := 0; i < numWorkers; i++ {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			config := z3.NewContextConfig()
+			ctx := z3.NewContext(config)
+			solver := z3.NewSolver(ctx)
+			for row := range jobs {
+				solver.Reset()
+				v, err := findMinPressesWithJoltagesILP(ctx, solver, row)
+				if err != nil {
+					results <- -1
+				} else {
+					results <- v
+				}
+			}
+		}()
+	}
+
+	for _, row := range lines.rows {
+		jobs <- row
+	}
+	close(jobs)
+
+	wg.Wait()
+	close(results)
 
 	total := 0
-	for _, row := range lines.rows {
-		v, err := findMinPressesWithJoltagesILP(ctx, row)
-		if err != nil {
+	for v := range results {
+		if v == -1 {
 			return -1
 		}
 		total += v
@@ -148,7 +177,7 @@ func part2(lines Input) int {
 
 // Uses Z3 SMT solver with a single context and incremental push/pop for binary search.
 // Finds minimum sum of button presses subject to hitting exact joltages on each light.
-func findMinPressesWithJoltagesILP(ctx *z3.Context, row Row) (int, error) {
+func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) (int, error) {
 	if len(row.joltages) == 0 {
 		return 0, nil
 	}
@@ -163,9 +192,6 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, row Row) (int, error) {
 
 	nButtons := len(row.buttons)
 	nLights := len(row.joltages)
-
-	// Create solver for this row
-	solver := z3.NewSolver(ctx)
 
 	// Create integer variables for each button press count
 	buttonVars := make([]z3.Int, nButtons)
@@ -184,8 +210,8 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, row Row) (int, error) {
 		var terms []z3.Int
 		for bIdx, btn := range row.buttons {
 			if slices.Contains(btn, lightIdx) {
-					terms = append(terms, buttonVars[bIdx])
-				}
+				terms = append(terms, buttonVars[bIdx])
+			}
 		}
 		if len(terms) == 0 {
 			if row.joltages[lightIdx] != 0 {
