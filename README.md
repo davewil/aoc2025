@@ -36,20 +36,22 @@ This repository focuses on **clean code**, **performance**, and exploring advanc
 
 ## 🧠 Difficulty Ratings
 
-Estimated difficulty for different experience levels:
+Estimated difficulty for different experience levels (Part 1 / Part 2):
 
 | Day | New Programmer | Good Programmer | Elite Programmer |
 |:---:|:---:|:---:|:---:|
-| 01 | 🟢 Easy | ⚪ Trivial | ⚪ Trivial |
-| 02 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
-| 03 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
-| 04 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
-| 05 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
-| 06 | 🔴 Hard | 🟡 Medium | 🟢 Easy |
-| 07 | 🔴 Hard | 🟡 Medium | 🟢 Easy |
-| 08 | 🟣 Very Hard | 🟡 Medium | 🟢 Easy |
-| 09 | 🔴 Hard | 🟡 Medium | 🟢 Easy |
-| 10 | 💀 Impossible | 🔴 Hard | 🟡 Medium |
+| 01 | 🟢 / 🟢 | ⚪ / ⚪ | ⚪ / ⚪ |
+| 02 | 🟡 / 🟡 | 🟢 / 🟢 | ⚪ / ⚪ |
+| 03 | 🟡 / 🟡 | 🟢 / 🟢 | ⚪ / ⚪ |
+| 04 | 🟡 / 🟡 | 🟢 / 🟢 | ⚪ / ⚪ |
+| 05 | 🟡 / 🔴 | 🟢 / 🟡 | ⚪ / 🟢 |
+| 06 | 🔴 / 🔴 | 🟡 / 🟡 | 🟢 / 🟢 |
+| 07 | 🔴 / 🔴 | 🟡 / 🟡 | 🟢 / 🟢 |
+| 08 | 🔴 / 🟣 | 🟡 / 🔴 | 🟢 / 🟡 |
+| 09 | 🟡 / 🔴 | 🟢 / 🟡 | ⚪ / 🟢 |
+| 10 | 🟡 / 💀 | 🟢 / 🔴 | ⚪ / 🟡 |
+
+**Legend**: ⚪ Trivial, 🟢 Easy, 🟡 Medium, 🔴 Hard, 🟣 Very Hard, 💀 Impossible
 
 ## 🛠️ Usage
 
