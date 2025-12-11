@@ -78,7 +78,7 @@ func parseJoltages(s string) ([]int, error) {
 	for part := range parts {
 		p, err := strconv.Atoi(part)
 		if err != nil {
-			return nil, fmt.Errorf("Failed to convet part: %v", err)
+			return nil, fmt.Errorf("failed to convert part: %v", err)
 		}
 		result = append(result, p)
 	}
@@ -138,10 +138,8 @@ func part2(lines Input) int {
 	results := make(chan int, len(lines.rows))
 	var wg sync.WaitGroup
 
-	for i := 0; i < numWorkers; i++ {
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+	for range numWorkers {
+		wg.Go(func() {
 			config := z3.NewContextConfig()
 			ctx := z3.NewContext(config)
 			solver := z3.NewSolver(ctx)
@@ -154,7 +152,7 @@ func part2(lines Input) int {
 					results <- v
 				}
 			}
-		}()
+		})
 	}
 
 	for _, row := range lines.rows {
