@@ -34,6 +34,23 @@ This repository focuses on **clean code**, **performance**, and exploring advanc
 | 11 |   |   | | |
 | 12 |   |   | | |
 
+## 🧠 Difficulty Ratings
+
+Estimated difficulty for different experience levels:
+
+| Day | New Programmer | Good Programmer | Elite Programmer |
+|:---:|:---:|:---:|:---:|
+| 01 | 🟢 Easy | ⚪ Trivial | ⚪ Trivial |
+| 02 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
+| 03 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
+| 04 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
+| 05 | 🟡 Medium | 🟢 Easy | ⚪ Trivial |
+| 06 | 🔴 Hard | 🟡 Medium | 🟢 Easy |
+| 07 | 🔴 Hard | 🟡 Medium | 🟢 Easy |
+| 08 | 🟣 Very Hard | 🟡 Medium | 🟢 Easy |
+| 09 | 🔴 Hard | 🟡 Medium | 🟢 Easy |
+| 10 | 💀 Impossible | 🔴 Hard | 🟡 Medium |
+
 ## 🛠️ Usage
 
 This project uses a `Makefile` for convenience.
