@@ -131,9 +131,13 @@ func findMinPresses(row Row) int {
 }
 
 func part2(lines Input) int {
+	// Create single context for all rows to avoid overhead
+	config := z3.NewContextConfig()
+	ctx := z3.NewContext(config)
+
 	total := 0
 	for _, row := range lines.rows {
-		v, err := findMinPressesWithJoltagesILP(row)
+		v, err := findMinPressesWithJoltagesILP(ctx, row)
 		if err != nil {
 			return -1
 		}
@@ -144,7 +148,7 @@ func part2(lines Input) int {
 
 // Uses Z3 SMT solver with a single context and incremental push/pop for binary search.
 // Finds minimum sum of button presses subject to hitting exact joltages on each light.
-func findMinPressesWithJoltagesILP(row Row) (int, error) {
+func findMinPressesWithJoltagesILP(ctx *z3.Context, row Row) (int, error) {
 	if len(row.joltages) == 0 {
 		return 0, nil
 	}
@@ -160,9 +164,7 @@ func findMinPressesWithJoltagesILP(row Row) (int, error) {
 	nButtons := len(row.buttons)
 	nLights := len(row.joltages)
 
-	// Create single context and solver
-	config := z3.NewContextConfig()
-	ctx := z3.NewContext(config)
+	// Create solver for this row
 	solver := z3.NewSolver(ctx)
 
 	// Create integer variables for each button press count
