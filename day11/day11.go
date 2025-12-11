@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"strings"
+	"time"
 
 	utils "github.com/davewil/aoc-utils"
 )
@@ -94,6 +95,14 @@ func main() {
 		fmt.Println("Error parsing input:", err)
 		return
 	}
-	fmt.Println("Part 1:", part1(graph))
-	fmt.Println("Part 2:", part2(graph))
+
+	start := time.Now()
+	part1Result := part1(graph)
+	part1Duration := time.Since(start)
+	fmt.Printf("Part 1: %d (took %v)\n", part1Result, part1Duration)
+
+	start = time.Now()
+	part2Result := part2(graph)
+	part2Duration := time.Since(start)
+	fmt.Printf("Part 2: %d (took %v)\n", part2Result, part2Duration)
 }
