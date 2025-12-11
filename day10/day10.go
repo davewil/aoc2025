@@ -217,18 +217,12 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) 
 			}
 			continue
 		}
-		sum := terms[0]
-		for _, t := range terms[1:] {
-			sum = sum.Add(t)
-		}
+		sum := terms[0].Add(terms[1:]...)
 		solver.Assert(sum.Eq(ctx.FromInt(int64(row.joltages[lightIdx]), ctx.IntSort()).(z3.Int)))
 	}
 
 	// Build total presses expression once
-	totalPresses := buttonVars[0]
-	for _, bv := range buttonVars[1:] {
-		totalPresses = totalPresses.Add(bv)
-	}
+	totalPresses := buttonVars[0].Add(buttonVars[1:]...)
 
 	// Upper bound
 	maxSum := 0
@@ -236,30 +230,38 @@ func findMinPressesWithJoltagesILP(ctx *z3.Context, solver *z3.Solver, row Row) 
 		maxSum += j
 	}
 
-	// Binary search with push/pop
+	// Model-guided binary search
 	lo, hi := 0, maxSum
-	for lo < hi {
+	best := -1
+
+	for lo <= hi {
 		mid := (lo + hi) / 2
 		solver.Push()
 		solver.Assert(totalPresses.LE(ctx.FromInt(int64(mid), ctx.IntSort()).(z3.Int)))
-		sat, _ := solver.Check()
-		solver.Pop()
+		sat, err := solver.Check()
+		if err != nil {
+			solver.Pop()
+			return -1, err
+		}
 		if sat {
-			hi = mid
+			// Found a solution, try to find a better one
+			model := solver.Model()
+			valExpr := model.Eval(totalPresses, true).(z3.Int)
+			val, _, _ := valExpr.AsInt64()
+			// model.Close() // Not available in go-z3
+			
+			best = int(val)
+			hi = int(val) - 1
 		} else {
 			lo = mid + 1
 		}
+		solver.Pop()
 	}
 
-	// Verify final answer
-	solver.Push()
-	solver.Assert(totalPresses.LE(ctx.FromInt(int64(lo), ctx.IntSort()).(z3.Int)))
-	sat, _ := solver.Check()
-	solver.Pop()
-	if !sat {
+	if best == -1 {
 		return -1, fmt.Errorf("no solution found")
 	}
-	return lo, nil
+	return best, nil
 }
 
 func rowLength(r Row) int {
