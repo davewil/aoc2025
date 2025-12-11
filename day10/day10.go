@@ -5,6 +5,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/aclements/go-z3/z3"
 	utils "github.com/davewil/aoc-utils"
 )
 
@@ -128,7 +129,112 @@ func findMinPresses(row Row) int {
 }
 
 func part2(lines Input) int {
-	return 0
+	total := 0
+	for _, row := range lines.rows {
+		v, err := findMinPressesWithJoltagesILP(row)
+		if err != nil {
+			return -1
+		}
+		total += v
+	}
+	return total
+}
+
+// Uses Z3 SMT solver with a single context and incremental push/pop for binary search.
+// Finds minimum sum of button presses subject to hitting exact joltages on each light.
+func findMinPressesWithJoltagesILP(row Row) (int, error) {
+	if len(row.joltages) == 0 {
+		return 0, nil
+	}
+	if len(row.buttons) == 0 {
+		for _, v := range row.joltages {
+			if v != 0 {
+				return -1, fmt.Errorf("no buttons to satisfy joltages")
+			}
+		}
+		return 0, nil
+	}
+
+	nButtons := len(row.buttons)
+	nLights := len(row.joltages)
+
+	// Create single context and solver
+	config := z3.NewContextConfig()
+	ctx := z3.NewContext(config)
+	solver := z3.NewSolver(ctx)
+
+	// Create integer variables for each button press count
+	buttonVars := make([]z3.Int, nButtons)
+	for i := 0; i < nButtons; i++ {
+		buttonVars[i] = ctx.IntConst(fmt.Sprintf("b%d", i))
+	}
+
+	// Each button >= 0
+	zero := ctx.FromInt(0, ctx.IntSort()).(z3.Int)
+	for i := 0; i < nButtons; i++ {
+		solver.Assert(buttonVars[i].GE(zero))
+	}
+
+	// Sum of button contributions = joltage for each light
+	for lightIdx := 0; lightIdx < nLights; lightIdx++ {
+		var terms []z3.Int
+		for bIdx, btn := range row.buttons {
+			for _, p := range btn {
+				if p == lightIdx {
+					terms = append(terms, buttonVars[bIdx])
+					break
+				}
+			}
+		}
+		if len(terms) == 0 {
+			if row.joltages[lightIdx] != 0 {
+				return -1, fmt.Errorf("light %d needs %d but no button affects it", lightIdx, row.joltages[lightIdx])
+			}
+			continue
+		}
+		sum := terms[0]
+		for _, t := range terms[1:] {
+			sum = sum.Add(t)
+		}
+		solver.Assert(sum.Eq(ctx.FromInt(int64(row.joltages[lightIdx]), ctx.IntSort()).(z3.Int)))
+	}
+
+	// Build total presses expression once
+	totalPresses := buttonVars[0]
+	for _, bv := range buttonVars[1:] {
+		totalPresses = totalPresses.Add(bv)
+	}
+
+	// Upper bound
+	maxSum := 0
+	for _, j := range row.joltages {
+		maxSum += j
+	}
+
+	// Binary search with push/pop
+	lo, hi := 0, maxSum
+	for lo < hi {
+		mid := (lo + hi) / 2
+		solver.Push()
+		solver.Assert(totalPresses.LE(ctx.FromInt(int64(mid), ctx.IntSort()).(z3.Int)))
+		sat, _ := solver.Check()
+		solver.Pop()
+		if sat {
+			hi = mid
+		} else {
+			lo = mid + 1
+		}
+	}
+
+	// Verify final answer
+	solver.Push()
+	solver.Assert(totalPresses.LE(ctx.FromInt(int64(lo), ctx.IntSort()).(z3.Int)))
+	sat, _ := solver.Check()
+	solver.Pop()
+	if !sat {
+		return -1, fmt.Errorf("no solution found")
+	}
+	return lo, nil
 }
 
 func rowLength(r Row) int {
