@@ -1,9 +1,11 @@
 package main
 
 import (
+	"slices"
 	"fmt"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/aclements/go-z3/z3"
 	utils "github.com/davewil/aoc-utils"
@@ -52,8 +54,8 @@ func parseButtons(s []string) [][]int {
 	buttons := []int{}
 	for _, b := range s {
 		b = strings.Trim(b, "()")
-		parts := strings.Split(b, ",")
-		for _, part := range parts {
+		parts := strings.SplitSeq(b, ",")
+		for part := range parts {
 			p, err := strconv.Atoi(part)
 			if err != nil {
 				fmt.Println("Failed to convert button part:", err)
@@ -70,8 +72,8 @@ func parseButtons(s []string) [][]int {
 func parseJoltages(s string) ([]int, error) {
 	result := []int{}
 	s = strings.Trim(s, "{}")
-	parts := strings.Split(s, ",")
-	for _, part := range parts {
+	parts := strings.SplitSeq(s, ",")
+	for part := range parts {
 		p, err := strconv.Atoi(part)
 		if err != nil {
 			return nil, fmt.Errorf("Failed to convet part: %v", err)
@@ -165,26 +167,23 @@ func findMinPressesWithJoltagesILP(row Row) (int, error) {
 
 	// Create integer variables for each button press count
 	buttonVars := make([]z3.Int, nButtons)
-	for i := 0; i < nButtons; i++ {
+	for i := range nButtons {
 		buttonVars[i] = ctx.IntConst(fmt.Sprintf("b%d", i))
 	}
 
 	// Each button >= 0
 	zero := ctx.FromInt(0, ctx.IntSort()).(z3.Int)
-	for i := 0; i < nButtons; i++ {
+	for i := range nButtons {
 		solver.Assert(buttonVars[i].GE(zero))
 	}
 
 	// Sum of button contributions = joltage for each light
-	for lightIdx := 0; lightIdx < nLights; lightIdx++ {
+	for lightIdx := range nLights {
 		var terms []z3.Int
 		for bIdx, btn := range row.buttons {
-			for _, p := range btn {
-				if p == lightIdx {
+			if slices.Contains(btn, lightIdx) {
 					terms = append(terms, buttonVars[bIdx])
-					break
 				}
-			}
 		}
 		if len(terms) == 0 {
 			if row.joltages[lightIdx] != 0 {
@@ -274,6 +273,12 @@ func main() {
 		fmt.Println("Error parsing input:", err)
 		return
 	}
-	fmt.Println("Part 1:", part1(lines))
-	fmt.Println("Part 2:", part2(lines))
+
+	start := time.Now()
+	p1 := part1(lines)
+	fmt.Printf("Part 1: %d (took %v)\n", p1, time.Since(start))
+
+	start = time.Now()
+	p2 := part2(lines)
+	fmt.Printf("Part 2: %d (took %v)\n", p2, time.Since(start))
 }
