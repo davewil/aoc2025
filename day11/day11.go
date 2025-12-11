@@ -14,7 +14,6 @@ type Graph struct {
 }
 
 func parseInput(raw string) (Graph, error) {
-	lines := strings.Split(strings.TrimSpace(raw), "\n")
 	nodes := make(map[string]int)
 	nextID := 0
 
@@ -32,8 +31,10 @@ func parseInput(raw string) (Graph, error) {
 	type edge struct {
 		from, to int
 	}
-	edges := []edge{}
+	// Pre-allocate edges slice to avoid resizing (guess size based on raw length)
+	edges := make([]edge, 0, len(raw)/10)
 
+	lines := strings.Split(strings.TrimSpace(raw), "\n")
 	for _, line := range lines {
 		parts := strings.Split(line, ": ")
 		if len(parts) != 2 {
@@ -96,9 +97,11 @@ func part2(graph Graph) int {
 		return 0
 	}
 
-	// Helper to run countPaths with fresh memo
+	// Reuse single memo buffer
+	memo := make([]int, len(graph.Adj))
+
+	// Helper to run countPaths with reused memo
 	runCount := func(from, to int) int {
-		memo := make([]int, len(graph.Adj))
 		for i := range memo {
 			memo[i] = -1
 		}
