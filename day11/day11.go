@@ -8,75 +8,118 @@ import (
 	utils "github.com/davewil/aoc-utils"
 )
 
-type Graph map[string][]string
+type Graph struct {
+	Adj   [][]int
+	Nodes map[string]int
+}
 
 func parseInput(raw string) (Graph, error) {
-	graph := make(Graph)
 	lines := strings.Split(strings.TrimSpace(raw), "\n")
+	nodes := make(map[string]int)
+	nextID := 0
+
+	getID := func(name string) int {
+		if id, ok := nodes[name]; ok {
+			return id
+		}
+		id := nextID
+		nextID++
+		nodes[name] = id
+		return id
+	}
+
+	// First pass: collect edges and assign IDs
+	type edge struct {
+		from, to int
+	}
+	edges := []edge{}
+
 	for _, line := range lines {
 		parts := strings.Split(line, ": ")
 		if len(parts) != 2 {
 			continue
 		}
-		node := parts[0]
+		fromID := getID(parts[0])
 		children := strings.Fields(parts[1])
-		graph[node] = children
+		for _, child := range children {
+			toID := getID(child)
+			edges = append(edges, edge{fromID, toID})
+		}
 	}
-	return graph, nil
+
+	// Build adjacency list
+	adj := make([][]int, nextID)
+	for _, e := range edges {
+		adj[e.from] = append(adj[e.from], e.to)
+	}
+
+	return Graph{Adj: adj, Nodes: nodes}, nil
 }
 
-func countPaths(graph Graph, current, target string, memo map[string]int) int {
+func countPaths(adj [][]int, current, target int, memo []int) int {
 	if current == target {
 		return 1
 	}
-	if count, ok := memo[current]; ok {
-		return count
+	if memo[current] != -1 {
+		return memo[current]
 	}
 
 	total := 0
-	for _, neighbor := range graph[current] {
-		total += countPaths(graph, neighbor, target, memo)
+	for _, neighbor := range adj[current] {
+		total += countPaths(adj, neighbor, target, memo)
 	}
 	memo[current] = total
 	return total
 }
 
 func part1(graph Graph) int {
-	memo := make(map[string]int)
-	return countPaths(graph, "you", "out", memo)
+	start, ok1 := graph.Nodes["you"]
+	end, ok2 := graph.Nodes["out"]
+	if !ok1 || !ok2 {
+		return 0
+	}
+
+	memo := make([]int, len(graph.Adj))
+	for i := range memo {
+		memo[i] = -1
+	}
+	return countPaths(graph.Adj, start, end, memo)
 }
 
 func part2(graph Graph) int {
-	// Check connectivity between dac and fft to determine order
-	memo := make(map[string]int)
-	dacToFft := countPaths(graph, "dac", "fft", memo)
+	svr, ok1 := graph.Nodes["svr"]
+	dac, ok2 := graph.Nodes["dac"]
+	fft, ok3 := graph.Nodes["fft"]
+	out, ok4 := graph.Nodes["out"]
 
-	memo = make(map[string]int)
-	fftToDac := countPaths(graph, "fft", "dac", memo)
+	if !ok1 || !ok2 || !ok3 || !ok4 {
+		return 0
+	}
+
+	// Helper to run countPaths with fresh memo
+	runCount := func(from, to int) int {
+		memo := make([]int, len(graph.Adj))
+		for i := range memo {
+			memo[i] = -1
+		}
+		return countPaths(graph.Adj, from, to, memo)
+	}
+
+	// Check connectivity between dac and fft to determine order
+	dacToFft := runCount(dac, fft)
+	fftToDac := runCount(fft, dac)
 
 	if dacToFft > 0 {
 		// Order: svr -> dac -> fft -> out
-		memo1 := make(map[string]int)
-		p1 := countPaths(graph, "svr", "dac", memo1)
-
-		memo2 := make(map[string]int)
-		p2 := countPaths(graph, "dac", "fft", memo2)
-
-		memo3 := make(map[string]int)
-		p3 := countPaths(graph, "fft", "out", memo3)
-
+		p1 := runCount(svr, dac)
+		p2 := dacToFft // Already calculated
+		p3 := runCount(fft, out)
 		return p1 * p2 * p3
 	} else if fftToDac > 0 {
 		// Order: svr -> fft -> dac -> out
-		memo1 := make(map[string]int)
-		p1 := countPaths(graph, "svr", "fft", memo1)
-
-		memo2 := make(map[string]int)
-		p2 := countPaths(graph, "fft", "dac", memo2)
-
-		memo3 := make(map[string]int)
-		p3 := countPaths(graph, "dac", "out", memo3)
-
+		p1 := runCount(svr, fft)
+		p2 := fftToDac // Already calculated
+		p3 := runCount(dac, out)
 		return p1 * p2 * p3
 	}
 
