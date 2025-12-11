@@ -3,7 +3,7 @@
 ![Go Version](https://img.shields.io/badge/Go-1.25-00ADD8?style=flat&logo=go)
 ![CI Status](https://github.com/davewil/aoc2025/actions/workflows/go.yml/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/davewil/aoc2025)](https://goreportcard.com/report/github.com/davewil/aoc2025)
-![Completion](https://img.shields.io/badge/stars-20%20%2F%2050-yellow)
+![Completion](https://img.shields.io/badge/stars-22%20%2F%2050-yellow)
 
 My solutions for [Advent of Code 2025](https://adventofcode.com/2025), written in **Go**.
 
@@ -13,6 +13,7 @@ This repository focuses on **clean code**, **performance**, and exploring advanc
 
 | Day | Title | Approach / Key Tech |
 |:---:|:---|:---|
+| **11** | **DAG Optimization** | Hand-rolled integer-based DAG implementation with memory reuse for **< 1ms** execution. Includes Graphviz export. |
 | **10** | **The Z3 Solver** | Used **Microsoft Z3** (SMT Solver) via CGO to solve an Integer Linear Programming problem. Includes parallel execution and model-guided binary search. [Read the Deep Dive](./day10/WHAT_HAPPENING.md) |
 | **09** | **Tile Geometry** | Geometric algorithms to find maximum areas and optimal rectangles from coordinate sets. |
 | **03** | **Recursion** | Explored recursive patterns and memoization. |
@@ -31,7 +32,7 @@ This repository focuses on **clean code**, **performance**, and exploring advanc
 | 08 | ⭐ | ⭐ | 12ms | `parsing` |
 | 09 | ⭐ | ⭐ | 45ms | `simulation` |
 | 10 | ⭐ | ⭐ | 250ms | `z3` `smt` `cgo` `parallel` |
-| 11 |   |   | | |
+| 11 | ⭐ | ⭐ | < 1ms | `dag` `graph` `memoization` |
 | 12 |   |   | | |
 
 ## 🧠 Difficulty Ratings
@@ -50,6 +51,7 @@ Estimated difficulty for different experience levels (Part 1 / Part 2):
 | 08 | 🔴 / 🟣 | 🟡 / 🔴 | 🟢 / 🟡 |
 | 09 | 🟡 / 🔴 | 🟢 / 🟡 | ⚪ / 🟢 |
 | 10 | 🟡 / 💀 | 🟢 / 🔴 | ⚪ / 🟡 |
+| 11 | 🟡 / 🔴 | 🟢 / 🟡 | ⚪ / 🟢 |
 
 **Legend**: ⚪ Trivial, 🟢 Easy, 🟡 Medium, 🔴 Hard, 🟣 Very Hard, 💀 Impossible
 
